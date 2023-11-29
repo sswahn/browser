@@ -1,6 +1,10 @@
 use gtk::prelude::*;
 use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, ResponseType, Window, WindowType};
 
+enum BrowserError {
+    IoError(std::io::Error),
+}
+
 fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
