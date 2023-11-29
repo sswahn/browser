@@ -6,7 +6,7 @@ use std::net::TcpStream;
 use std::str;
 use std::sync::Mutex;
 use gtk::prelude::*;
-use gtk::{Button, Entry, Image, Label, Window, WindowType};
+use gtk::{Button, Entry, Image, Label, Menu, MenuBar, MenuItem, Window, WindowType};
 use tokio::task;
 
 const HTTP_PORT: u16 = 80;
@@ -33,29 +33,45 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
 
-    let go_icon = Image::from_icon_name(Some("gtk-ok"), IconSize::Button.into());
     let back_icon = Image::from_icon_name(Some("go-back"), IconSize::Button.into());
     let forward_icon = Image::from_icon_name(Some("go-forward"), IconSize::Button.into());
-    
-    let go_button = Button::new_with_label("Go").set_image(Some(&go_icon));
+    let go_icon = Image::from_icon_name(Some("gtk-ok"), IconSize::Button.into());
+
     let back_button = Button::new_with_label("Back").set_image(Some(&back_icon));
     let forward_button = Button::new_with_label("Forward").set_image(Some(&forward_icon));
+    let go_button = Button::new_with_label("Go").set_image(Some(&go_icon));
 
+    let bookmarks_menu = Menu::new();
+    let bookmarks_menu_button = MenuItem::new_with_label("Bookmarks");
+    bookmarks_menu_button.set_submenu(Some(&bookmarks_menu));
+    
+    let add_bookmark_item = MenuItem::new_with_label("Add Bookmark");
+    let view_bookmarks_item = MenuItem::new_with_label("View Bookmarks");
+    
+    bookmarks_menu.append(&add_bookmark_item);
+    bookmarks_menu.append(&view_bookmarks_item);
+    
+    menubar.append(&bookmarks_menu_button);
+
+    let browser_clone = browser.clone();
+    add_bookmark_item.connect_activate(move |_| {
+        add_bookmark_dialog(&browser_clone);
+    });
+    
+    view_bookmarks_item.connect_activate(move |_| {
+        view_bookmarks_dialog(&browser_clone);
+    });
+
+    
     let label = Label::new(None);
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
-    vbox.add(&entry);
-    vbox.add(&button);
-    vbox.add(&label);
-    window.add(&vbox);
 
     go_button.connect_clicked(move |_| {
         handle_go_button_click(&entry, &label, &browser);
     });
-    
     back_button.connect_clicked(move |_| {
         handle_back_button_click(&browser);
     });
-    
     forward_button.connect_clicked(move |_| {
         handle_forward_button_click(&browser);
     });
@@ -66,10 +82,86 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
         Inhibit(false)
     });
 
+    vbox.add(&entry);
+    vbox.add(&back_button);
+    vbox.add(&forward_button);
+    vbox.add(&go_button);
+    vbox.add(&label);
+    vbox.add(&bookmarks_menu);
+    window.add(&vbox);
     window.show_all(); // Show all UI elements.
     gtk::main(); // Start the GTK main loop.
     Ok(())
 }
+
+// Import necessary GTK modules
+use gtk::{Dialog, Label, Entry, Box, Button, ResponseType};
+
+fn add_bookmark_dialog(browser: &Mutex<Browser>) {
+    let dialog = Dialog::new();
+    dialog.set_title("Add Bookmark");
+
+    let title_label = Label::new(Some("Bookmark Title:"));
+    let title_entry = Entry::new();
+
+    let url_label = Label::new(Some("Bookmark URL:"));
+    let url_entry = Entry::new();
+
+    let add_button = Button::new_with_label("Add");
+    let cancel_button = Button::new_with_label("Cancel");
+
+    let content_area = dialog.get_content_area();
+    content_area.add(&title_label);
+    content_area.add(&title_entry);
+    content_area.add(&url_label);
+    content_area.add(&url_entry);
+    content_area.add(&add_button);
+    content_area.add(&cancel_button);
+
+    add_button.connect_clicked(move |_| {
+        let title = title_entry.get_text().unwrap_or_else(|| String::from(""));
+        let url = url_entry.get_text().unwrap_or_else(|| String::from(""));
+        let mut browser = browser.lock().unwrap();
+        browser.add_bookmark(&url, &title);
+        dialog.close();
+    });
+
+    cancel_button.connect_clicked(|_| {
+        dialog.close();
+    });
+
+    dialog.show_all();
+}
+
+fn view_bookmarks_dialog(browser: &Mutex<Browser>) {
+    let dialog = Dialog::new();
+    dialog.set_title("Bookmarks");
+
+    let bookmarks_label = Label::new(Some("Bookmarks:"));
+
+    let bookmarks_text = browser.lock().unwrap().get_bookmarks().iter()
+        .map(|(title, url)| format!("{}: {}", title, url))
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let bookmarks_entry = Entry::new();
+    bookmarks_entry.set_text(&bookmarks_text);
+    bookmarks_entry.set_editable(false);
+
+    let close_button = Button::new_with_label("Close");
+
+    let content_area = dialog.get_content_area();
+    content_area.add(&bookmarks_label);
+    content_area.add(&bookmarks_entry);
+    content_area.add(&close_button);
+
+    close_button.connect_clicked(|_| {
+        dialog.close();
+    });
+
+    dialog.show_all();
+}
+
 
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
     let url = entry.get_text().unwrap_or_else(|| String::from(""));
