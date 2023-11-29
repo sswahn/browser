@@ -2,8 +2,6 @@ use native_tls::{TlsConnector, TlsStream};
 use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use std::str;
-use std::collections::VecDeque;
-use std::collections::HashMap;
 use std::sync::Mutex;
 use gtk::prelude::*;
 use gtk::{Label, Button, Entry, Window, WindowType};
