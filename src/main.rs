@@ -194,14 +194,6 @@ fn parse_status_line(status_line: &str) -> Result<(u16, &str, &str), &'static st
     }
 }
 
-fn read_user_input(prompt: &str) -> String {
-    print!("{}", prompt);
-    io::stdout().flush().expect("Failed to flush standard output");
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).expect("Failed to read line");
-    input.trim().to_string();
-}
-
 async fn write_to_stream<S: Write>(stream: &mut S, data: &str) {
     stream.write(data.as_bytes()).expect("Failed to write to stream");
 }
