@@ -9,27 +9,46 @@ const HTTPS_PORT: u16 = 443;
 fn main() {
     let url = read_user_input("Enter URL: ");
     let (host, path) = parse_url(&url);
+    let port = get_port(&url)
+    validate_url(&url, &host, &path);
+    connect_and_handle_request(&host, port, &url);
+}
 
-    // Determine the appropriate port based on the scheme
-    let port = if url.starts_with("https://") { HTTPS_PORT } else { HTTP_PORT };
-
-    // Connect to the host
+fn connect_and_handle_request(host: &str, port: u16, url: &str) {
     match TcpStream::connect(format!("{}:{}", host, port)) {
         Ok(mut stream) => {
             if url.starts_with("https://") {
                 // Upgrade the connection to HTTPS if needed
-                if let Ok(tls_stream) = upgrade_to_https(&host, stream) {
-                    handle_https_request(&tls_stream, &host, &path);
-                } else {
-                    eprintln!("Failed to establish a secure connection");
-                }
+                handle_tls_stream(&mut stream, host, &path);
             } else {
                 // Handle HTTP request
-                handle_http_request(&mut stream, &host, &path);
+                handle_http_request(&mut stream, host, &path);
             }
         }
         Err(_) => eprintln!("Failed to connect to the host"),
     }
+}
+
+fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
+    if let Ok(tls_stream) = upgrade_to_https(host, stream) {
+        handle_https_request(&tls_stream, host, &path);
+    } else {
+        eprintln!("Failed to establish a secure connection");
+    }
+}
+
+fn validate_url(url: &str, host: &str, path: &str) -> Result<(), &'static str> {
+    match parse_url(url) {
+        Some(_) => Ok(()),
+        None => {
+            eprintln!("Invalid URL format");
+            Err("Invalid URL format")
+        }
+    }
+}
+
+fn get_port(url: &str) -> u16 {
+    if url.starts_with("https://") { HTTPS_PORT } else { HTTP_PORT }
 }
 
 fn read_user_input(prompt: &str) -> String {
