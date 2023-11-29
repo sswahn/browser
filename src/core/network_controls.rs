@@ -13,7 +13,7 @@ enum BrowserError {
     TlsError(Box<dyn std::error::Error>),
 }
 
-async fn http_response(url: &str) {
+async fn http_response(url: &str) -> Result<Response, BrowserError> {
     let host = parse_url(&url);
     let port = get_port(&url);
     let response = task::spawn(async move {
