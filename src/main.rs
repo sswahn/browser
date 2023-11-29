@@ -58,20 +58,31 @@ impl Browser {
 fn main() {
     let mut browser = Browser::new();
     loop {
-        let url = read_user_input("Enter URL: ");
+        let input = read_user_input("Enter URL: ");
+        let url = input.trim().to_string();
         browser.navigate(url.clone());
-        
+        let cached_response = browser.get_cache(&url)
+        if Some(cached_response) {
+            return render_html(cached_response);
+        }
         let (host, path) = parse_url(&url);
         let port = get_port(&url);
         let stream = connect_to_stream(&host, port).await;
         make_request(&mut stream, &url);
     }
-    Ok(())
 }
 
 async fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
     match stream {
         Ok(mut stream) => {
+            if let Some(cached_response) = browser.get_cached(url) {
+                println!("Using cached response for: {}", url);
+                render_html(cached_response);
+            } else {
+                handle_request(&mut stream, url, &mut browser.cache).await?;
+            }
+
+            
             if host.starts_with("https://") {
                 handle_tls_stream(&mut stream, host, path);
             } else {
@@ -134,7 +145,8 @@ async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
     if let Some((headers, body)) = parse_http_response(&response) {
         println!("Headers:\n{}", headers);
         println!("Body:\n{}", body);
-        // render HTML
+        render_html(&body)
+        // set cache
     } else {
         eprintln!("Failed to parse HTTP response");
     }
@@ -188,3 +200,44 @@ async fn read_from_stream<S: Read>(stream: &mut S) -> String {
     stream.read(&mut buffer).expect("Failed to read from stream");
     String::from_utf8_lossy(&buffer).to_string();
 }
+
+fn render_html(html: &str) {
+    let mut in_tag = false;
+    let mut tag_name = String::new();
+    let mut in_text = false;
+
+    for c in html.chars() {
+        match c {
+            '<' => {
+                in_tag = true;
+                tag_name.clear();
+            }
+            '>' => {
+                in_tag = false;
+                if tag_name.starts_with('/') {
+                    // Closing tag, ignore for simplicity
+                } else if tag_name.ends_with('/') {
+                    // Self-closing tag, ignore for simplicity
+                } else {
+                    // Opening tag, print tag name
+                    println!("Start tag: {}", tag_name);
+                }
+            }
+            '/' if in_tag => {
+                // Inside a tag, this is a potential closing tag
+                // Ignore for simplicity
+            }
+            'a'..='z' | 'A'..='Z' if in_tag => {
+                // Collect characters to get tag name
+                tag_name.push(c);
+            }
+            _ => {
+                if !in_tag {
+                    // Inside text, print text content
+                    print!("{}", c);
+                }
+            }
+        }
+    }
+}
+
