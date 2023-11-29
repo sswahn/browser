@@ -15,8 +15,9 @@ enum BrowserError {
 async fn http_response(url: &str) -> Result<Response, BrowserError> {
     let host = parse_url(&url);
     let port = get_port(&url);
-    if let Ok(stream) = connect_to_stream(&host, port).await {
-        make_request(&stream, &host)
+    match connect_to_stream(&host, port).await {
+        Ok(stream) => make_request(&stream, &host),
+        Err(err) => Err(BrowserError::ConnectionError)
     }
 }
 
@@ -38,19 +39,19 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
 async fn make_request(stream: &mut TcpStream, host: &str) -> Result<String, BrowserError> {
     if let Ok(working_stream) = get_working_stream(&host, &stream).await {
         handle_request(&working_stream, host)
+    } else {
+        Err(BrowserError::WorkingStreamError)
     }
 }
 
 async fn get_working_stream(host: &str, stream: &mut TcpStream) -> Result<TcpStream, BrowserError> {
     if host.starts_with(HTTPS_PREFIX) {
-        match upgrade_to_https(host, stream).await {
-            Ok(tls_stream) => tls_stream,
-            Err(err) => Err(BrowserError::TlsError(err)),
-        }
+        upgrade_to_https(host, stream).await.map_err(|err| BrowserError::TlsError(err))
     } else {
         Ok(stream)
     }
 }
+
 
 async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, BrowserError> {
     let connector = TlsConnector::new().map_err(|e| BrowserError::TlsError(Box::new(e)))?;
