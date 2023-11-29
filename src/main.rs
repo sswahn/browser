@@ -32,6 +32,7 @@ fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path
 fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error> {
     TcpStream::connect(format!("{}:{}", host, port)).map_err(|e| {
         eprintln!("Failed to connect to the host: {}", e);
+        e
     });
 }
 
