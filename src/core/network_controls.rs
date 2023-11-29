@@ -1,6 +1,5 @@
 use native_tls::{TlsConnector, TlsStream};
 use std::net::TcpStream;
-use tokio::task;
 use std::str;
 
 const HTTP_PORT: u16 = 80;
@@ -13,14 +12,11 @@ enum BrowserError {
     TlsError(Box<dyn std::error::Error>),
 }
 
-async fn http_response(url: &str) -> Result<Response, BrowserError> {
+async fn http_response(url: &str) -> Result<Response> {
     let host = parse_url(&url);
     let port = get_port(&url);
-    let response = task::spawn(async move {
-        let stream = connect_to_stream(&host, port).await;
-        make_request(&stream, &host)
-    }).await?;
-    Ok(response)
+    let stream = connect_to_stream(&host, port).await;
+    make_request(&stream, &host)
 }
 
 fn get_port(url: &str) -> u16 {
