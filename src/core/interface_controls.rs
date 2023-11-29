@@ -150,7 +150,7 @@ async fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Br
         return;
     }
 
-    gtk::idle_add(move || {
+    tokio::spawn(async move {
         let response = http_response(&url).await
         label.set_text(&response.body);
         browser.set_cache(&url, &response.body);
