@@ -32,7 +32,6 @@ fn build_browser(browser: &Browser) -> Result<(), BrowserError> {
     window.add(&vbox);
     window.show_all(); // Show all UI elements.
     gtk::main(); // Start the GTK main loop.
-    Ok(())
 }
 
 fn build_navigation_buttons(entry: &Entry, label: &Label, browser: &Browser) -> (Button, Button, Button) {
@@ -140,28 +139,25 @@ fn view_bookmarks_dialog(browser: &Browser) {
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
     let url = entry.get_text().unwrap_or(String::from(""));
     browser.navigate(&url);
-
-    label.set_text("Loading...");
-    
     if let Some(cached_response) = browser.get_cache(&url) {
         label.set_text(cached_response);
         return;
     }
-
+    label.set_text("Loading...");
     tokio::spawn(async move {
         match http_response(&url).await {
             Ok(response) => {
                 // Update the UI on the main thread with the response.
                 glib::idle_add(move || {
                     label.set_text(&response.body);
-                    Continue(false) // Stop the idle add
+                    Return(false) // Stop the idle add
                 });
             }
             Err(err) => {
                 // Handle the error and update the UI.
                 glib::idle_add(move || {
                     label.set_text(&format!("Error: {:?}", err));
-                    Continue(false) // Stop the idle add
+                    Return(false) // Stop the idle add
                 });
             }
         }
