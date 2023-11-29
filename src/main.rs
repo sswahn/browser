@@ -2,13 +2,13 @@ use native_tls::{TlsConnector, TlsStream};
 use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use std::str;
-mod core/browser
+mod core/controls
 
 const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
 
 fn main() {
-    let mut browser = browser::Browser::new();
+    let mut browser = controls::Browser::new();
     loop {
         let input = read_user_input("Enter URL: ");
         let url = input.trim().to_string();
