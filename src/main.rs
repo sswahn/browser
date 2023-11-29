@@ -62,8 +62,8 @@ fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
 
         // Update the UI on the main thread
         gtk::idle_add(move || {
-            label.set_text(&response);
-            browser.set_cache(&url, response);
+            label.set_text(&response.body);
+            browser.set_cache(&url, response.body);
 
             // stops the idle handler
             glib::Continue(false)
@@ -98,12 +98,12 @@ async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStrea
     Ok(tls_stream)
 }
 
-async fn handle_request(stream: &TcpStream, host: &str) -> String {
+async fn handle_request(stream: &TcpStream, host: &str) -> Result<String, Box<dyn std::error::Error>> {
     let request = format!("GET / HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", host);
-    stream.write_all(request.as_bytes()).await.unwrap();
+    stream.write_all(request.as_bytes()).await?;
     let mut buffer = Vec::new();
-    stream.take(1024).read_to_end(&mut buffer).await.unwrap();
-    String::from_utf8_lossy(&buffer).to_string()
+    stream.take(1024).read_to_end(&mut buffer).await?;
+    Ok(String::from_utf8_lossy(&buffer).to_string())
 }
 
 fn parse_url(url: &str) -> (String, String) {
