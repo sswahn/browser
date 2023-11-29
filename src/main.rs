@@ -75,14 +75,6 @@ fn main() {
 async fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
     match stream {
         Ok(mut stream) => {
-            if let Some(cached_response) = browser.get_cached(url) {
-                println!("Using cached response for: {}", url);
-                render_html(cached_response);
-            } else {
-                handle_request(&mut stream, url, &mut browser.cache).await?;
-            }
-
-            
             if host.starts_with("https://") {
                 handle_tls_stream(&mut stream, host, path);
             } else {
