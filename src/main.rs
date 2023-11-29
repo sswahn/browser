@@ -67,20 +67,21 @@ fn main() {
         let (host, path) = parse_url(&url);
         let port = get_port(&url);
         let stream = connect_to_stream(&host, port).await;
-        let response = make_request(&mut stream, &url).await;
+        let response = make_request(&mut stream, &host, &url).await;
         render_html(&response)
-        browser.set_cache(url, &response)
+        browser.set_cache(&url, &response)
     }
 }
 
-async fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error> {
-    TcpStream::connect(format!("{}:{}", host, port)).map_err(|e| {
-        eprintln!("Failed to connect to the host: {}", e);
-        e
-    });
+fn get_port(url: &str) -> u16 {
+    if url.starts_with("https://") { HTTPS_PORT } else { HTTP_PORT }
 }
 
-async fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
+async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
+    TcpStream::connect(format!("{}:{}", host, port))
+}
+
+async fn make_request(stream: &mut TcpStream, host: &str, path: &str) {
     if host.starts_with("https://") {
         handle_tls_stream(&mut stream, host, path);
     } else {
@@ -93,21 +94,17 @@ async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
     handle_request(&tls_stream, host, &path);
 }
 
-async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
-    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", path, host);
-    write_to_stream(stream, &request).await
-    let response = read_from_stream(stream).await;
-    let (headers, body) = parse_http_response(&response);
-    body;
-}
-
-fn upgrade_to_https(host: &str, stream: TcpStream) -> TlsStream<TcpStream> {
+fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> TlsStream<TcpStream> {
     let connector = TlsConnector::new();
     connector.connect(host, stream);
 }
 
-fn get_port(url: &str) -> u16 {
-    if url.starts_with("https://") { HTTPS_PORT } else { HTTP_PORT }
+async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
+    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", path, host);
+    write_to_stream(stream, &request).await;
+    let response = read_from_stream(stream).await;
+    let (headers, body) = parse_http_response(&response);
+    body;
 }
 
 fn parse_url(url: &str) -> (String, String) {
@@ -148,12 +145,16 @@ fn parse_http_response(response: &str) -> Option<(String, String)> {
     }
 }
 
-fn parse_status_line(status_line: &str) -> (u16, &str, &str) {
-    let mut parts = status_line.split_whitespace();
-    let status = parts.next().unwrap_or("0").parse().unwrap_or(0);
-    let version = parts.next().unwrap_or("");
-    let reason = parts.skip(1).collect::<Vec<&str>>().join(" ");
-    (status, version, &reason)
+fn parse_status_line(status_line: &str) -> Result<(u16, &str, &str), &'static str> {
+    let mut parts = status_line.split_whitespace().collect::<Vec<&str>>();
+    if parts.len() >= 3 {
+        let status = parts[0].parse().unwrap_or(0);
+        let version = parts[1];
+        let reason = parts[2..].join(" ");
+        Ok((status, version, &reason))
+    } else {
+        Err("Invalid status line format")
+    }
 }
 
 fn read_user_input(prompt: &str) -> String {
