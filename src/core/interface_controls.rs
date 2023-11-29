@@ -137,14 +137,7 @@ fn view_bookmarks_dialog(browser: &Mutex<Browser>) {
 }
 
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
-    let url = entry.get_text().unwrap_or(String::from(""));
-    let mut browser = browser.lock().unwrap();
-    browser.navigate(&url);
-    if let Some(cached_response) = browser.get_cache(&url) {
-        label.set_text(cached_response);
-        return;
-    }
-    
+    // how to handle loading with network in external module?
     label.set_text("Loading...");
     
     let (host, path) = parse_url(&url);
