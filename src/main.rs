@@ -102,12 +102,12 @@ fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>
 
 fn handle_back_button_click(browser: &Mutex<Browser>) {
     let mut browser = browser.lock().unwrap();
-    browser.navigate_back();
+    browser.back();
 }
 
 fn handle_forward_button_click(browser: &Mutex<Browser>) {
     let mut browser = browser.lock().unwrap();
-    browser.navigate_forward();
+    browser.forward();
 }
 
 fn get_port(url: &str) -> u16 {
