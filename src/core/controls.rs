@@ -14,8 +14,8 @@ impl Browser {
     }
 
     fn navigate(&mut self, url: String) {
-        self.history.push_back(url.clone());
-        self.current_url = url;
+        self.history.push_back(url.to_string());
+        self.current_url = Some(url.to_string());
     }
 
     fn back(&mut self) -> Option<String> {
@@ -33,8 +33,9 @@ impl Browser {
     }
 
     fn refresh(&mut self) {
-        let url = self.current_url.clone()
-        self.cache.remove(&url);
+        if let Some(url) = self.current_url.clone() {
+            self.cache.remove(&url);
+        }
     }
 
     fn set_cache(&mut self, url: &str, response: String) {
