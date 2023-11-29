@@ -3,6 +3,7 @@ use std::io::{self, Read, Write};
 use std::net::TcpStream;
 use std::str;
 use std::collections::VecDeque;
+use std::collections::HashMap;
 use std::sync::Mutex;
 use gtk::prelude::*;
 use gtk::{Label, Button, Entry, Window, WindowType};
@@ -47,7 +48,7 @@ impl Browser {
     }
 
     fn refresh(&mut self) {
-        let url = self.current_url.clone()
+        let url = self.current_url.clone();
         self.cache.remove(&url);
     }
 
@@ -95,11 +96,10 @@ fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
     let url = entry.get_text().unwrap_or_else(|| String::from(""));
     let mut browser = browser.lock().unwrap();
     browser.navigate(url.clone());
-    let cached_response = browser.get_cache(&url);
-    if Some(cached_response) {
+    if let Some(cached_response) = browser.get_cache(&url) {
         label.set_text(cached_response);
         return;
-    } 
+    }
     let (host, path) = parse_url(&url);
     let port = get_port(&url);
     let stream = connect_to_stream(&host, port);
