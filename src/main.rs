@@ -8,7 +8,7 @@ const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
 
 fn main() {
-    let mut browser = Browser::new();
+    let mut browser = browser::Browser::new();
     loop {
         let input = read_user_input("Enter URL: ");
         let url = input.trim().to_string();
