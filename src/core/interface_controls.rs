@@ -1,3 +1,5 @@
+mod core;
+use core::network_controls::http_response;
 use gtk::prelude::*;
 use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, ResponseType, Window, WindowType};
 
@@ -5,11 +7,12 @@ enum BrowserError {
     IoError(std::io::Error),
 }
 
-fn build_browser(browser: &Mutex<Browser>, response: ) -> Result<(), BrowserError> {
+fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
     let label = Label::new(None);
+    state.set_label(label)
     let (back_button, forward_button, go_button) = build_navigation_buttons(&entry, &label, &browser);
     let bookmarks_menu_bar = build_bookmarks_menu(&browser);
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
@@ -136,20 +139,23 @@ fn view_bookmarks_dialog(browser: &Mutex<Browser>) {
     dialog.show_all();
 }
 
-fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
-    // how to handle loading with network in external module?
+async fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
+    let url = entry.get_text().unwrap_or(String::from(""));
+    let mut browser = browser.lock().unwrap();
+    browser.navigate(&url);
+
     label.set_text("Loading...");
     
-    let (host, path) = parse_url(&url);
-    let port = get_port(&url);
+    if let Some(cached_response) = browser.get_cache(&url) {
+        label.set_text(cached_response);
+        return;
+    }
 
-    // Update the UI on the main thread
     gtk::idle_add(move || {
-        label.set_text(&response.body); // response needs to be passed in main.rs to parent in this mod
+        let response = http_response(&url).await
+        label.set_text(&response.body);
         browser.set_cache(&url, &response.body);
-
-        // stops the idle handler
-        glib::Continue(false)
+        glib::Continue(false)  // stops the idle handler
     });   
 }
 
