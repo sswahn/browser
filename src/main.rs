@@ -164,7 +164,7 @@ fn view_bookmarks_dialog(browser: &Mutex<Browser>) {
 
 
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
-    let url = entry.get_text().unwrap_or_else(|| String::from(""));
+    let url = entry.get_text().unwrap_or(String::from(""));
     let mut browser = browser.lock().unwrap();
     browser.navigate(&url);
     if let Some(cached_response) = browser.get_cache(&url) {
@@ -184,7 +184,7 @@ fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>
         // Update the UI on the main thread
         gtk::idle_add(move || {
             label.set_text(&response.body);
-            browser.set_cache(&url, response.body);
+            browser.set_cache(&url, &response.body);
 
             // stops the idle handler
             glib::Continue(false)
