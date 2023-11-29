@@ -5,7 +5,7 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
-    let (back_button, forward_button, go_button) = build_browser_navigation(&entry, &label, &browser);
+    let (back_button, forward_button, go_button) = build_navigation_buttons(&entry, &label, &browser);
     let bookmarks_menu_bar = build_bookmarks_menu(&browser);
     let label = Label::new(None);
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
@@ -28,7 +28,7 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     Ok(())
 }
 
-fn build_browser_navigation(entry: &Entry, label: &Label, browser: &Mutex<Browser>) -> (Button, Button, Button) {
+fn build_navigation_buttons(entry: &Entry, label: &Label, browser: &Mutex<Browser>) -> (Button, Button, Button) {
     let back_icon = Image::from_icon_name(Some("go-back"), IconSize::Button.into());
     let forward_icon = Image::from_icon_name(Some("go-forward"), IconSize::Button.into());
     let go_icon = Image::from_icon_name(Some("gtk-ok"), IconSize::Button.into());
