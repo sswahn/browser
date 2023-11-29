@@ -18,10 +18,8 @@ enum BrowserError {
 async fn http_response(url: &str) -> Result<Response, BrowserError> {
     let host = parse_url(&url);
     let port = get_port(&url);
-    match connect_to_stream(&host, port).await {
-        Ok(stream) => make_request(&stream, &host),
-        Err(err) => Err(BrowserError::ConnectionError)
-    }
+    let stream = connect_to_stream(&host, port).await?;
+    make_request(&stream, &host)
 }
 
 fn parse_url(url: &str) -> String {
@@ -91,7 +89,7 @@ fn parse_http_response(response: &str) -> Option<(String, String)> {
                 headers.push_str(line);
                 headers.push('\n');
             }
-            let body = lines.collect::<Vec<&str>>().join("\n");
+            let body = lines.collect::<String>();
             Some((headers, body))
         } else {
             None
