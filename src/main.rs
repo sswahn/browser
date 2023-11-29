@@ -48,8 +48,9 @@ impl Browser {
     }
 
     fn refresh(&mut self) {
-        let url = self.current_url.clone();
-        self.cache.remove(&url);
+        if let Some(url) = self.current_url.clone() {
+            self.cache.remove(&url);
+        }
     }
 
     fn set_cache(&mut self, url: &str, response: String) {
