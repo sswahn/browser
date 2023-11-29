@@ -151,19 +151,14 @@ fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>
     let (host, path) = parse_url(&url);
     let port = get_port(&url);
 
-    task::spawn(async move {
-        let stream = connect_to_stream(&host, port).await;
-        let response = make_request(&stream, &host).await;
+    // Update the UI on the main thread
+    gtk::idle_add(move || {
+        label.set_text(&response.body); // response needs to be passed in main.rs to parent in this mod
+        browser.set_cache(&url, &response.body);
 
-        // Update the UI on the main thread
-        gtk::idle_add(move || {
-            label.set_text(&response.body);
-            browser.set_cache(&url, &response.body);
-
-            // stops the idle handler
-            glib::Continue(false)
-        });
-    });
+        // stops the idle handler
+        glib::Continue(false)
+    });   
 }
 
 fn handle_back_button_click(browser: &Mutex<Browser>) {
