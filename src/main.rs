@@ -14,13 +14,22 @@ const HTTPS_PORT: u16 = 443;
 const HTTPS_PREFIX: &str = "https://";
 const HTTP_PREFIX: &str = "http://";
 
-fn main() {
-    let browser_mutex = Mutex::new(Browser::new());
-    build_gui(&browser_mutex)
+enum BrowserError {
+    InvalidUrlFormat { host: String, path: String },
+    TlsError(Box<dyn std::error::Error>),
+    IoError(std::io::Error),
+    // Add more error variants as needed
 }
 
-fn build_gui(browser: &Mutex<Browser>) {
-    gtk::init().expect("Failed to initialize GTK.");
+fn main() {
+    let browser_mutex = Mutex::new(Browser::new());
+    if let Err(err) = build_browser(&browser_mutex) {
+        eprintln!("Browser initialization failed: {:?}", err);
+    }
+}
+
+fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
+    gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
     let button = Button::new_with_label("Go");
@@ -43,6 +52,7 @@ fn build_gui(browser: &Mutex<Browser>) {
 
     window.show_all(); // Show all UI elements.
     gtk::main(); // Start the GTK main loop.
+    Ok(())
 }
 
 fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
@@ -91,9 +101,9 @@ async fn make_request(stream: &mut TcpStream, host: &str) {
     handle_request(&working_stream, host)
 }
 
-async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
-    let connector = TlsConnector::new()?;
-    let tls_stream = connector.connect(host, stream)?;
+async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, BrowserError> {
+    let connector = TlsConnector::new().map_err(|e| BrowserError::TlsError(Box::new(e)))?;
+    let tls_stream = connector.connect(host, stream).map_err(|e| BrowserError::TlsError(Box::new(e)))?;
     Ok(tls_stream)
 }
 
@@ -112,9 +122,12 @@ fn parse_url(url: &str) -> (String, String) {
     (host.to_string(), path.to_string())
 }
 
-fn validate_url(host: &str, path: &str) -> Result<(), &'static str> {
+fn validate_url(host: &str, path: &str) -> Result<(), BrowserError> {
     if host.is_empty() || path.is_empty() {
-        return Err(format!("Invalid URL format: host={}, path={}", host, path));
+        return Err(BrowserError::InvalidUrlFormat {
+            host: host.to_string(),
+            path: path.to_string(),
+        });
     }
     Ok(())
 }
