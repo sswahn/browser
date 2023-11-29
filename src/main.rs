@@ -104,14 +104,23 @@ fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
         return;
     }
     
+    label.set_text("Loading...");
+    
     let (host, path) = parse_url(&url);
     let port = get_port(&url);
 
     task::spawn(async move {
         let stream = connect_to_stream(&host, port);
         let response = make_request(&stream, &url);
-        label.set_text(&response);
-        browser.set_cache(&url, response);
+
+        // Update the UI on the main thread
+        gtk::idle_add(move || {
+            label.set_text(&response);
+            browser.set_cache(&url, response);
+
+            // stops the idle handler
+            glib::Continue(false)
+        });
     });
 }
 
