@@ -10,6 +10,8 @@ mod core/controls;
 
 const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
+const HTTPS_PREFIX: &str = "https://";
+const HTTP_PREFIX: &str = "http://";
 
 fn main() {
     let browser_mutex = Mutex::new(controls::Browser::new());
@@ -72,7 +74,7 @@ fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
 }
 
 fn get_port(url: &str) -> u16 {
-    if url.starts_with("https://") { HTTPS_PORT } else { HTTP_PORT }
+    if url.starts_with(HTTPS_PREFIX) { HTTPS_PORT } else { HTTP_PORT }
 }
 
 async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
@@ -80,7 +82,7 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
 }
 
 async fn make_request(stream: &mut TcpStream, host: &str) {
-    let working_stream = if host.starts_with("https://") {
+    let working_stream = if host.starts_with(HTTPS_PREFIX) {
         upgrade_to_https(host, stream).await.unwrap()
     } else {
         stream
@@ -103,7 +105,7 @@ async fn handle_request(stream: &TcpStream, host: &str) -> Result<String, Box<dy
 }
 
 fn parse_url(url: &str) -> (String, String) {
-    let url = url.trim_start_matches("http://").trim_start_matches("https://");
+    let url = url.trim_start_matches(HTTPS_PREFIX).trim_start_matches(HTTPS_PREFIX);
     let (host, path) = url.split_once('/').unwrap_or((url, ""));
     validate_url(&host, &path);
     (host.to_string(), path.to_string())
