@@ -71,14 +71,14 @@ fn upgrade_to_https(host: &str, stream: TcpStream) -> Result<TlsStream<TcpStream
 }
 
 fn handle_http_request(stream: &mut TcpStream, host: &str, path: &str) {
-    let request = format!("GET {} HTTP/1.0\r\nHost: {}\r\n\r\n", path, host);
+    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\n\r\n", path, host);
     write_to_stream(stream, &request);
     let response = read_from_stream(stream);
     println!("{}", response);
 }
 
 fn handle_https_request(tls_stream: &TlsStream<TcpStream>, host: &str, path: &str) {
-    let request = format!("GET {} HTTP/1.0\r\nHost: {}\r\n\r\n", path, host);
+    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\n\r\n", path, host);
     write_to_stream(tls_stream, &request);
     let response = read_from_stream(tls_stream);
     println!("{}", response);
