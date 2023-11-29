@@ -5,7 +5,7 @@ enum BrowserError {
     IoError(std::io::Error),
 }
 
-fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
+fn build_browser(browser: &Mutex<Browser>, response: ) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
