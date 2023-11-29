@@ -10,7 +10,6 @@ fn main() {
     let url = read_user_input("Enter URL: ");
     let (host, path) = parse_url(&url);
     let port = get_port(&url);
-    validate_url(&url, &host, &path);
     let stream = connect_to_stream(&host, port);
     make_request(&mut stream, &url);
 }
@@ -33,34 +32,27 @@ fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path
 fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error> {
     TcpStream::connect(format!("{}:{}", host, port)).map_err(|e| {
         eprintln!("Failed to connect to the host: {}", e);
-        e
     });
-}
-
-fn validate_url(url: &str, host: &str, path: &str) -> Result<(), &'static str> {
-    if parse_url(url).is_none() {
-        eprintln!("Invalid URL format");
-        return Err("Invalid URL format");
-    }
-    Ok(());
 }
 
 fn get_port(url: &str) -> u16 {
     if url.starts_with("https://") { HTTPS_PORT } else { HTTP_PORT }
 }
 
-fn read_user_input(prompt: &str) -> String {
-    print!("{}", prompt);
-    io::stdout().flush().expect("Failed to flush standard output");
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).expect("Failed to read line");
-    input.trim().to_string();
-}
-
 fn parse_url(url: &str) -> (String, String) {
     let url = url.trim_start_matches("http://").trim_start_matches("https://");
-    let (host, path) = url.split_once('/').unwrap_or(("", ""));
-    (host.to_string(), path.to_string());
+    let (host, path) = url.split_once('/').unwrap_or((url, ""));
+    validate_url(&url, &host, &path);
+    (host.to_string(), path.to_string())
+}
+
+fn validate_url(url: &str, host: &str, path: &str) -> Result<(), &'static str> {
+    let (parsed_host, _) = parse_url(url);
+    if parsed_host.is_empty() || path.is_empty() {
+        eprintln!("Invalid URL format");
+        return Err("Invalid URL format");
+    }
+    Ok(())
 }
 
 fn upgrade_to_https(host: &str, stream: TcpStream) -> Result<TlsStream<TcpStream>, native_tls::Error> {
@@ -84,6 +76,14 @@ fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
     }
     let response = read_from_stream(stream);
     println!("{}", response);
+}
+
+fn read_user_input(prompt: &str) -> String {
+    print!("{}", prompt);
+    io::stdout().flush().expect("Failed to flush standard output");
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).expect("Failed to read line");
+    input.trim().to_string();
 }
 
 fn write_to_stream<S: Write>(stream: &mut S, data: &str) {
