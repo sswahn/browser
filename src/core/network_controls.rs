@@ -1,4 +1,18 @@
+use native_tls::{TlsConnector, TlsStream};
+use std::net::TcpStream;
+use std::str;
+use std::sync::Mutex;
+use tokio::task;
 
+const HTTP_PORT: u16 = 80;
+const HTTPS_PORT: u16 = 443;
+const HTTPS_PREFIX: &str = "https://";
+const HTTP_PREFIX: &str = "http://";
+
+enum BrowserError {
+    InvalidUrlFormat { host: String, path: String },
+    TlsError(Box<dyn std::error::Error>),
+}
 
 fn get_port(url: &str) -> u16 {
     if url.starts_with(HTTPS_PREFIX) { HTTPS_PORT } else { HTTP_PORT }
