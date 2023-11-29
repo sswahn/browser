@@ -130,9 +130,10 @@ async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
     handle_request(&tls_stream, host, &path);
 }
 
-fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> TlsStream<TcpStream> {
-    let connector = TlsConnector::new();
-    connector.connect(host, stream);
+fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
+    let connector = TlsConnector::new()?;
+    let tls_stream = connector.connect(host, stream)?;
+    Ok(tls_stream)
 }
 
 async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
