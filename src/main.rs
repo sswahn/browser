@@ -7,6 +7,8 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use gtk::prelude::*;
 use gtk::{Label, Button, Entry, Window, WindowType};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::task;
 
 //mod core/controls;
 
@@ -101,12 +103,16 @@ fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
         label.set_text(cached_response);
         return;
     }
+    
     let (host, path) = parse_url(&url);
     let port = get_port(&url);
-    let stream = connect_to_stream(&host, port);
-    let response = make_request(&stream, &url);
-    label.set_text(&response);
-    browser.set_cache(&url, response);
+
+    task::spawn(async move {
+        let stream = connect_to_stream(&host, port);
+        let response = make_request(&stream, &url);
+        label.set_text(&response);
+        browser.set_cache(&url, response);
+    });
 }
 
 fn get_port(url: &str) -> u16 {
@@ -126,11 +132,11 @@ async fn make_request(stream: &mut TcpStream, host: &str, path: &str) {
 }
 
 async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
-    let tls_stream = upgrade_to_https(host, stream);
+    let tls_stream = upgrade_to_https(host, stream).await.unwrap();
     handle_request(&tls_stream, host, &path)
 }
 
-fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
+async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
     let connector = TlsConnector::new()?;
     let tls_stream = connector.connect(host, stream)?;
     Ok(tls_stream)
