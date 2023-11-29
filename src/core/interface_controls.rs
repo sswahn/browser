@@ -12,7 +12,6 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
     let label = Label::new(None);
-    state.set_label(label)
     let (back_button, forward_button, go_button) = build_navigation_buttons(&entry, &label, &browser);
     let bookmarks_menu_bar = build_bookmarks_menu(&browser);
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
