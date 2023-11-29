@@ -113,8 +113,7 @@ fn parse_url(url: &str) -> (String, String) {
 
 fn validate_url(host: &str, path: &str) -> Result<(), &'static str> {
     if host.is_empty() || path.is_empty() {
-        eprintln!("Invalid URL format");
-        return Err("Invalid URL format");
+        return Err(format!("Invalid URL format: host={}, path={}", host, path));
     }
     Ok(())
 }
