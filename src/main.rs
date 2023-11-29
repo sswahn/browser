@@ -71,12 +71,48 @@ fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
 }
 
 fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
-    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: {}\r\n\r\n", path, host);
+    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", path, host);
     if let Err(e) = write_to_stream(stream, &request) {
         return eprintln!("Failed to write to stream: {}", e);
     }
     let response = read_from_stream(stream);
-    println!("{}", response);
+    if let Some((headers, body)) = parse_http_response(&response) {
+        println!("Headers:\n{}", headers);
+        println!("Body:\n{}", body);
+    } else {
+        eprintln!("Failed to parse HTTP response");
+    }
+}
+
+fn parse_http_response(response: &str) -> Option<(String, String)> {
+    let mut lines = response.lines();
+    if let Some(status_line) = lines.next() {
+        let (status, _version, _reason) = parse_status_line(status_line);
+        if status >= 200 && status < 300 {
+            let mut headers = String::new();
+            while let Some(line) = lines.next() {
+                if line.trim().is_empty() {
+                    break;
+                }
+                headers.push_str(line);
+                headers.push('\n');
+            }
+            let body = lines.collect::<Vec<&str>>().join("\n");
+            Some((headers, body))
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+fn parse_status_line(status_line: &str) -> (u16, &str, &str) {
+    let mut parts = status_line.split_whitespace();
+    let status = parts.next().unwrap_or("0").parse().unwrap_or(0);
+    let version = parts.next().unwrap_or("");
+    let reason = parts.skip(1).collect::<Vec<&str>>().join(" ");
+    (status, version, &reason)
 }
 
 fn read_user_input(prompt: &str) -> String {
