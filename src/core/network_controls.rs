@@ -31,13 +31,20 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
     TcpStream::connect(format!("{}:{}", host, port))
 }
 
-async fn make_request(stream: &mut TcpStream, host: &str) {
-    let working_stream = if host.starts_with(HTTPS_PREFIX) {
-        upgrade_to_https(host, stream).await.unwrap()
+async fn make_request(stream: &mut TcpStream, host: &str) -> Result<String, BrowserError> {
+    let working_stream = get_working_stream.await;
+    handle_request(&working_stream, host)
+}
+
+async fn get_working_stream() {
+    if host.starts_with(HTTPS_PREFIX) {
+        match upgrade_to_https(host, stream).await {
+            Ok(tls_stream) => tls_stream,
+            Err(err) => Err(BrowserError::TlsError(err)),
+        }
     } else {
         stream
-    };
-    handle_request(&working_stream, host)
+    }
 }
 
 async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, BrowserError> {
