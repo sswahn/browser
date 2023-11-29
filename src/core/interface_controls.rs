@@ -8,7 +8,7 @@ enum BrowserError {
     IoError(std::io::Error),
 }
 
-fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
+fn build_browser(browser: &Browser) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
@@ -35,7 +35,7 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     Ok(())
 }
 
-fn build_navigation_buttons(entry: &Entry, label: &Label, browser: &Mutex<Browser>) -> (Button, Button, Button) {
+fn build_navigation_buttons(entry: &Entry, label: &Label, browser: &Browser) -> (Button, Button, Button) {
     let back_icon = Image::from_icon_name(Some("go-back"), IconSize::Button.into());
     let forward_icon = Image::from_icon_name(Some("go-forward"), IconSize::Button.into());
     let go_icon = Image::from_icon_name(Some("gtk-ok"), IconSize::Button.into());
@@ -54,7 +54,7 @@ fn build_navigation_buttons(entry: &Entry, label: &Label, browser: &Mutex<Browse
     (back_button, forward_button, go_button)
 }
 
-fn build_bookmarks_menu(browser: &Mutex<Browser>) -> Menu {
+fn build_bookmarks_menu(browser: &Browser) -> Menu {
     let bookmarks_menu_bar = Menu::new();
     let bookmarks_menu_button = MenuItem::new_with_label("Bookmarks");
     let bookmarks_menu = Menu::new();
@@ -74,7 +74,7 @@ fn build_bookmarks_menu(browser: &Mutex<Browser>) -> Menu {
     bookmarks_menu_bar
 }
 
-fn add_bookmark_dialog(browser: &Mutex<Browser>) {
+fn add_bookmark_dialog(browser: &Browser) {
     let dialog = Dialog::new();
     dialog.set_title("Add Bookmark");
 
@@ -110,7 +110,7 @@ fn add_bookmark_dialog(browser: &Mutex<Browser>) {
     dialog.show_all();
 }
 
-fn view_bookmarks_dialog(browser: &Mutex<Browser>) {
+fn view_bookmarks_dialog(browser: &Browser) {
     let dialog = Dialog::new();
     dialog.set_title("Bookmarks");
 
@@ -139,7 +139,7 @@ fn view_bookmarks_dialog(browser: &Mutex<Browser>) {
     dialog.show_all();
 }
 
-async fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
+async fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
     let url = entry.get_text().unwrap_or(String::from(""));
     let mut browser = browser.lock().unwrap();
     browser.navigate(&url);
@@ -159,12 +159,12 @@ async fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Br
     });   
 }
 
-fn handle_back_button_click(browser: &Mutex<Browser>) {
+fn handle_back_button_click(browser: &Browser) {
     let mut browser = browser.lock().unwrap();
     browser.back();
 }
 
-fn handle_forward_button_click(browser: &Mutex<Browser>) {
+fn handle_forward_button_click(browser: &Browser) {
     let mut browser = browser.lock().unwrap();
     browser.forward();
 }
