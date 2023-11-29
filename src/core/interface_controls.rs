@@ -1,52 +1,14 @@
-
+use gtk::prelude::*;
+use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, ResponseType, Window, WindowType};
 
 fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
-
-    let back_icon = Image::from_icon_name(Some("go-back"), IconSize::Button.into());
-    let forward_icon = Image::from_icon_name(Some("go-forward"), IconSize::Button.into());
-    let go_icon = Image::from_icon_name(Some("gtk-ok"), IconSize::Button.into());
-
-    let back_button = Button::new_with_label("Back").set_image(Some(&back_icon));
-    let forward_button = Button::new_with_label("Forward").set_image(Some(&forward_icon));
-    let go_button = Button::new_with_label("Go").set_image(Some(&go_icon));
-
-    let bookmarks_menu = Menu::new();
-    let bookmarks_menu_button = MenuItem::new_with_label("Bookmarks");
-    bookmarks_menu_button.set_submenu(Some(&bookmarks_menu));
-    
-    let add_bookmark_item = MenuItem::new_with_label("Add Bookmark");
-    let view_bookmarks_item = MenuItem::new_with_label("View Bookmarks");
-    
-    bookmarks_menu.append(&add_bookmark_item);
-    bookmarks_menu.append(&view_bookmarks_item);
-    
-    menubar.append(&bookmarks_menu_button);
-
-    let browser_clone = browser.clone();
-    add_bookmark_item.connect_activate(move |_| {
-        add_bookmark_dialog(&browser_clone);
-    });
-    
-    view_bookmarks_item.connect_activate(move |_| {
-        view_bookmarks_dialog(&browser_clone);
-    });
-
-    
+    let (back_button, forward_button, go_button) = build_browser_navigation(&entry, &label, &browser)
+    let bookmarks_menu_bar = build_bookmarks_menu(&browser)
     let label = Label::new(None);
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
-
-    go_button.connect_clicked(move |_| {
-        handle_go_button_click(&entry, &label, &browser);
-    });
-    back_button.connect_clicked(move |_| {
-        handle_back_button_click(&browser);
-    });
-    forward_button.connect_clicked(move |_| {
-        handle_forward_button_click(&browser);
-    });
 
     // Handle window close event.
     window.connect_delete_event(|_, _| {
@@ -59,15 +21,51 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     vbox.add(&forward_button);
     vbox.add(&go_button);
     vbox.add(&label);
-    vbox.add(&bookmarks_menu);
+    vbox.add(&bookmarks_menu_bar);
     window.add(&vbox);
     window.show_all(); // Show all UI elements.
     gtk::main(); // Start the GTK main loop.
     Ok(())
 }
 
-// Import necessary GTK modules
-use gtk::{Dialog, Label, Entry, Box, Button, ResponseType};
+fn build_browser_navigation(entry: &Entry, label: &Label, browser: &Mutex<Browser>) -> (Button, Button, Button) {
+    let back_icon = Image::from_icon_name(Some("go-back"), IconSize::Button.into());
+    let forward_icon = Image::from_icon_name(Some("go-forward"), IconSize::Button.into());
+    let go_icon = Image::from_icon_name(Some("gtk-ok"), IconSize::Button.into());
+    let back_button = Button::new_with_label("Back").set_image(Some(&back_icon));
+    let forward_button = Button::new_with_label("Forward").set_image(Some(&forward_icon));
+    let go_button = Button::new_with_label("Go").set_image(Some(&go_icon));
+    go_button.connect_clicked(move |_| {
+        handle_go_button_click(&entry, &label, &browser);
+    });
+    back_button.connect_clicked(move |_| {
+        handle_back_button_click(&browser);
+    });
+    forward_button.connect_clicked(move |_| {
+        handle_forward_button_click(&browser);
+    });
+    (back_button, forward_button, go_button)
+}
+
+fn build_bookmarks_menu(browser: &Mutex<Browser>) -> Menu {
+    let bookmarks_menu_bar = Menu::new();
+    let bookmarks_menu_button = MenuItem::new_with_label("Bookmarks");
+    let bookmarks_menu = Menu::new();
+    let add_bookmark_item = MenuItem::new_with_label("Add Bookmark");
+    let view_bookmarks_item = MenuItem::new_with_label("View Bookmarks");
+    bookmarks_menu.append(&add_bookmark_item);
+    bookmarks_menu.append(&view_bookmarks_item);
+    bookmarks_menu_button.set_submenu(Some(&bookmarks_menu));
+    bookmarks_menu_bar.append(&bookmarks_menu_button);
+    let browser_clone = browser.clone();
+    add_bookmark_item.connect_activate(move |_| {
+        add_bookmark_dialog(&browser_clone);
+    });
+    view_bookmarks_item.connect_activate(move |_| {
+        view_bookmarks_dialog(&browser_clone);
+    });
+    bookmarks_menu_bar
+}
 
 fn add_bookmark_dialog(browser: &Mutex<Browser>) {
     let dialog = Dialog::new();
@@ -133,7 +131,6 @@ fn view_bookmarks_dialog(browser: &Mutex<Browser>) {
 
     dialog.show_all();
 }
-
 
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
     let url = entry.get_text().unwrap_or(String::from(""));
