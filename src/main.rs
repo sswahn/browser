@@ -10,11 +10,11 @@ fn main() {
     let url = read_user_input("Enter URL: ");
     let (host, path) = parse_url(&url);
     let port = get_port(&url);
-    let stream = connect_to_stream(&host, port);
+    let stream = connect_to_stream(&host, port).await;
     make_request(&mut stream, &url);
 }
 
-fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
+async fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
     match stream {
         Ok(mut stream) => {
             if host.starts_with("https://") {
@@ -29,7 +29,7 @@ fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path
     }
 }
 
-fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error> {
+async fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error> {
     TcpStream::connect(format!("{}:{}", host, port)).map_err(|e| {
         eprintln!("Failed to connect to the host: {}", e);
         e
@@ -62,7 +62,7 @@ fn upgrade_to_https(host: &str, stream: TcpStream) -> Result<TlsStream<TcpStream
     Ok(tls_stream);
 }
 
-fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
+async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
     if let Ok(tls_stream) = upgrade_to_https(host, stream) {
         handle_request(&tls_stream, host, &path);
     } else {
@@ -70,7 +70,7 @@ fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
     }
 }
 
-fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
+async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
     let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", path, host);
     if let Err(e) = write_to_stream(stream, &request) {
         return eprintln!("Failed to write to stream: {}", e);
@@ -123,11 +123,11 @@ fn read_user_input(prompt: &str) -> String {
     input.trim().to_string();
 }
 
-fn write_to_stream<S: Write>(stream: &mut S, data: &str) {
+async fn write_to_stream<S: Write>(stream: &mut S, data: &str) {
     stream.write(data.as_bytes()).expect("Failed to write to stream");
 }
 
-fn read_from_stream<S: Read>(stream: &mut S) -> String {
+async fn read_from_stream<S: Read>(stream: &mut S) -> String {
     let mut buffer = [0; 1024];
     stream.read(&mut buffer).expect("Failed to read from stream");
     String::from_utf8_lossy(&buffer).to_string();
