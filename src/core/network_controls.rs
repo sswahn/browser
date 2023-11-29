@@ -19,6 +19,13 @@ async fn http_response(url: &str) -> Result<Response, BrowserError> {
     make_request(&stream, &host)
 }
 
+fn parse_url(url: &str) -> String {
+    let url = url.trim_start_matches(HTTP_PREFIX).trim_start_matches(HTTPS_PREFIX);
+    let (host, path) = url.split_once('/').unwrap_or((url, ""));
+    validate_url(&host, &path);
+    host.to_string()
+}
+
 fn get_port(url: &str) -> u16 {
     if url.starts_with(HTTPS_PREFIX) { HTTPS_PORT } else { HTTP_PORT }
 }
@@ -28,8 +35,9 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
 }
 
 async fn make_request(stream: &mut TcpStream, host: &str) -> Result<String, BrowserError> {
-    let working_stream = get_working_stream.await;
-    handle_request(&working_stream, host)
+    if let Ok(working_stream) = get_working_stream(&host, &stream).await {
+        handle_request(&working_stream, host)
+    }
 }
 
 async fn get_working_stream(host: &str, stream: &mut TcpStream) -> Result<TcpStream, BrowserError> {
@@ -55,13 +63,6 @@ async fn handle_request(stream: &TcpStream, host: &str) -> Result<String, Box<dy
     let mut buffer = Vec::new();
     stream.take(1024).read_to_end(&mut buffer).await?;
     Ok(String::from_utf8_lossy(&buffer).to_string())
-}
-
-fn parse_url(url: &str) -> String {
-    let url = url.trim_start_matches(HTTP_PREFIX).trim_start_matches(HTTPS_PREFIX);
-    let (host, path) = url.split_once('/').unwrap_or((url, ""));
-    validate_url(&host, &path);
-    host.to_string()
 }
 
 fn validate_url(host: &str, path: &str) -> Result<(), BrowserError> {
