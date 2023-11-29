@@ -9,23 +9,30 @@ const HTTPS_PORT: u16 = 443;
 fn main() {
     let url = read_user_input("Enter URL: ");
     let (host, path) = parse_url(&url);
-    let port = get_port(&url)
+    let port = get_port(&url);
     validate_url(&url, &host, &path);
-    connect_and_handle_request(&host, port, &url);
+    let stream = connect_to_stream(&host, port);
+    handle_request(&mut stream, &url);
 }
 
-fn connect_and_handle_request(host: &str, port: u16, url: &str) {
-    match TcpStream::connect(format!("{}:{}", host, port)) {
+fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error> {
+    TcpStream::connect(format!("{}:{}", host, port))
+}
+
+fn handle_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
+    match stream {
         Ok(mut stream) => {
-            if url.starts_with("https://") {
+            if host.starts_with("https://") {
                 // Upgrade the connection to HTTPS if needed
-                handle_tls_stream(&mut stream, host, &path);
+                handle_tls_stream(&mut stream, host, path);
             } else {
                 // Handle HTTP request
-                handle_http_request(&mut stream, host, &path);
+                handle_http_request(&mut stream, host, path);
             }
-        }
-        Err(_) => eprintln!("Failed to connect to the host"),
+        },
+        Err(_) => {
+            eprintln!("Failed to connect to the host")
+        },
     }
 }
 
@@ -38,13 +45,11 @@ fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
 }
 
 fn validate_url(url: &str, host: &str, path: &str) -> Result<(), &'static str> {
-    match parse_url(url) {
-        Some(_) => Ok(()),
-        None => {
-            eprintln!("Invalid URL format");
-            Err("Invalid URL format")
-        }
+    if parse_url(url).is_none() {
+        eprintln!("Invalid URL format");
+        return Err("Invalid URL format");
     }
+    Ok(())
 }
 
 fn get_port(url: &str) -> u16 {
@@ -56,18 +61,19 @@ fn read_user_input(prompt: &str) -> String {
     io::stdout().flush().expect("Failed to flush stdout");
     let mut input = String::new();
     io::stdin().read_line(&mut input).expect("Failed to read line");
-    input.trim().to_string()
+    input.trim().to_string();
 }
 
-fn parse_url(url: &str) -> (String, &str) {
+fn parse_url(url: &str) -> (String, String) {
     let url = url.trim_start_matches("http://").trim_start_matches("https://");
     let (host, path) = url.split_once('/').unwrap_or(("", ""));
-    (host.to_string(), path)
+    (host.to_string(), path.to_string())
 }
 
 fn upgrade_to_https(host: &str, stream: TcpStream) -> Result<TlsStream<TcpStream>, native_tls::Error> {
     let connector = TlsConnector::new()?;
-    connector.connect(host, stream)
+    let tls_stream = connector.connect(host, stream)?;
+    Ok(tls_stream)
 }
 
 fn handle_http_request(stream: &mut TcpStream, host: &str, path: &str) {
@@ -91,5 +97,5 @@ fn write_to_stream<S: Write>(stream: &mut S, data: &str) {
 fn read_from_stream<S: Read>(stream: &mut S) -> String {
     let mut buffer = [0; 1024];
     stream.read(&mut buffer).expect("Failed to read from stream");
-    String::from_utf8_lossy(&buffer).to_string()
+    String::from_utf8_lossy(&buffer).to_string();
 }
