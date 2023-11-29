@@ -5,9 +5,9 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
+    let label = Label::new(None);
     let (back_button, forward_button, go_button) = build_navigation_buttons(&entry, &label, &browser);
     let bookmarks_menu_bar = build_bookmarks_menu(&browser);
-    let label = Label::new(None);
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
 
     // Handle window close event.
