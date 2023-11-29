@@ -13,30 +13,13 @@ enum BrowserError {
     TlsError(Box<dyn std::error::Error>),
 }
 
-fn http_response(browser: &Mutex<Browser>) {
-
-    // need to get entry from UI...
-    let url = entry.get_text().unwrap_or(String::from(""));
-    
-    let mut browser = browser.lock().unwrap();
-    browser.navigate(&url);
-    if let Some(cached_response) = browser.get_cache(&url) {
-
-        // need to get label from UI
-        label.set_text(cached_response);
-        return;
-    }
-
-
-    
-    
+async fn http_response(url: &str) {
     let host = parse_url(&url);
     let port = get_port(&url);
     let response = task::spawn(async move {
         let stream = connect_to_stream(&host, port).await;
-        make_request(&stream, &host).await
+        make_request(&stream, &host)
     }).await?;
-
     Ok(response)
 }
 
