@@ -23,7 +23,7 @@ impl Browser {
 
     fn navigate(&mut self, url: String) {
         self.history.push_back(url.clone());
-        self.current_url = Some(url);
+        self.current_url = url;
     }
 
     fn back(&mut self) -> Option<String> {
@@ -41,9 +41,8 @@ impl Browser {
     }
 
     fn refresh(&mut self) {
-        if let Some(url) = self.current_url.clone() {
-            self.cache.remove(&url);
-        }
+        let url = self.current_url.clone()
+        self.cache.remove(&url);
     }
 
     fn set_cache(&mut self, url: &str, response: String) {
@@ -55,9 +54,8 @@ impl Browser {
     }
 }
 
-let mut browser = Browser::new();
-
 fn main() {
+    let mut browser = Browser::new();
     loop {
         let input = read_user_input("Enter URL: ");
         let url = input.trim().to_string();
@@ -69,22 +67,9 @@ fn main() {
         let (host, path) = parse_url(&url);
         let port = get_port(&url);
         let stream = connect_to_stream(&host, port).await;
-        make_request(&mut stream, &url);
-    }
-}
-
-async fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
-    match stream {
-        Ok(mut stream) => {
-            if host.starts_with("https://") {
-                handle_tls_stream(&mut stream, host, path);
-            } else {
-                handle_request(&mut stream, host, path);
-            }
-        },
-        Err(_) => {
-            eprintln!("Failed to connect to the host")
-        },
+        let response = make_request(&mut stream, &url).await;
+        render_html(&response)
+        browser.set_cache(url, &response)
     }
 }
 
@@ -93,6 +78,32 @@ async fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::
         eprintln!("Failed to connect to the host: {}", e);
         e
     });
+}
+
+async fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
+    if host.starts_with("https://") {
+        handle_tls_stream(&mut stream, host, path);
+    } else {
+        handle_request(&mut stream, host, path);
+    }
+}
+
+async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
+    let tls_stream = upgrade_to_https(host, stream);
+    handle_request(&tls_stream, host, &path);
+}
+
+async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
+    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", path, host);
+    write_to_stream(stream, &request).await
+    let response = read_from_stream(stream).await;
+    let (headers, body) = parse_http_response(&response);
+    body;
+}
+
+fn upgrade_to_https(host: &str, stream: TcpStream) -> TlsStream<TcpStream> {
+    let connector = TlsConnector::new();
+    connector.connect(host, stream);
 }
 
 fn get_port(url: &str) -> u16 {
@@ -112,36 +123,6 @@ fn validate_url(host: &str, path: &str) -> Result<(), &'static str> {
         return Err("Invalid URL format");
     }
     Ok(())
-}
-
-fn upgrade_to_https(host: &str, stream: TcpStream) -> Result<TlsStream<TcpStream>, native_tls::Error> {
-    let connector = TlsConnector::new()?;
-    let tls_stream = connector.connect(host, stream)?;
-    Ok(tls_stream);
-}
-
-async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
-    if let Ok(tls_stream) = upgrade_to_https(host, stream) {
-        handle_request(&tls_stream, host, &path);
-    } else {
-        eprintln!("Failed to establish a secure connection");
-    }
-}
-
-async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
-    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", path, host);
-    if let Err(e) = write_to_stream(stream, &request).await {
-        return eprintln!("Failed to write to stream: {}", e);
-    }
-    let response = read_from_stream(stream).await;
-    if let Some((headers, body)) = parse_http_response(&response) {
-        println!("Headers:\n{}", headers);
-        println!("Body:\n{}", body);
-        render_html(&body)
-        browser.set_cache(path, &body)
-    } else {
-        eprintln!("Failed to parse HTTP response");
-    }
 }
 
 fn parse_http_response(response: &str) -> Option<(String, String)> {
