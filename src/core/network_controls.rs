@@ -15,8 +15,9 @@ enum BrowserError {
 async fn http_response(url: &str) -> Result<Response, BrowserError> {
     let host = parse_url(&url);
     let port = get_port(&url);
-    let stream = connect_to_stream(&host, port).await;
-    make_request(&stream, &host)
+    if let Ok(stream) = connect_to_stream(&host, port).await {
+        make_request(&stream, &host)
+    }
 }
 
 fn parse_url(url: &str) -> String {
