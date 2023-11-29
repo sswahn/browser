@@ -2,7 +2,7 @@ mod network_controls;
 use network_controls::http_response;
 use tokio::task;
 use gtk::prelude::*;
-use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, ResponseType, Window, WindowType};
+use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, Orientation, ResponseType, Window, WindowType};
 
 enum BrowserError {
     IoError(std::io::Error),
@@ -15,7 +15,7 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     let label = Label::new(None);
     let (back_button, forward_button, go_button) = build_navigation_buttons(&entry, &label, &browser);
     let bookmarks_menu_bar = build_bookmarks_menu(&browser);
-    let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
+    let vbox = Box::new(Orientation::Vertical, 5);
 
     // Handle window close event.
     window.connect_delete_event(|_, _| {
