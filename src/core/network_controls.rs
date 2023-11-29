@@ -10,7 +10,9 @@ const BUFFER_SIZE: usize = 1024;
 
 enum BrowserError {
     InvalidUrlFormat { host: String, path: String },
+    ConnectionError,
     TlsError(Box<dyn std::error::Error>),
+    WorkingStreamError,
 }
 
 async fn http_response(url: &str) -> Result<Response, BrowserError> {
