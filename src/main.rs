@@ -34,7 +34,7 @@ fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error>
     TcpStream::connect(format!("{}:{}", host, port)).map_err(|e| {
         eprintln!("Failed to connect to the host: {}", e);
         e
-    })
+    });
 }
 
 fn validate_url(url: &str, host: &str, path: &str) -> Result<(), &'static str> {
@@ -42,7 +42,7 @@ fn validate_url(url: &str, host: &str, path: &str) -> Result<(), &'static str> {
         eprintln!("Invalid URL format");
         return Err("Invalid URL format");
     }
-    Ok(())
+    Ok(());
 }
 
 fn get_port(url: &str) -> u16 {
@@ -60,13 +60,13 @@ fn read_user_input(prompt: &str) -> String {
 fn parse_url(url: &str) -> (String, String) {
     let url = url.trim_start_matches("http://").trim_start_matches("https://");
     let (host, path) = url.split_once('/').unwrap_or(("", ""));
-    (host.to_string(), path.to_string())
+    (host.to_string(), path.to_string());
 }
 
 fn upgrade_to_https(host: &str, stream: TcpStream) -> Result<TlsStream<TcpStream>, native_tls::Error> {
     let connector = TlsConnector::new()?;
     let tls_stream = connector.connect(host, stream)?;
-    Ok(tls_stream)
+    Ok(tls_stream);
 }
 
 fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
