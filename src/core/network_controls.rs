@@ -1,8 +1,7 @@
 use native_tls::{TlsConnector, TlsStream};
 use std::net::TcpStream;
 use std::str;
-use std::sync::Mutex;
-use tokio::task;
+
 
 const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
