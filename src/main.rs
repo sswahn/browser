@@ -111,7 +111,7 @@ fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
 
     task::spawn(async move {
         let stream = connect_to_stream(&host, port);
-        let response = make_request(&stream, &url);
+        let response = make_request(&stream, &host);
 
         // Update the UI on the main thread
         gtk::idle_add(move || {
@@ -132,17 +132,17 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
     TcpStream::connect(format!("{}:{}", host, port))
 }
 
-async fn make_request(stream: &mut TcpStream, host: &str, path: &str) {
+async fn make_request(stream: &mut TcpStream, host: &str) {
     if host.starts_with("https://") {
-        handle_tls_stream(&mut stream, host, path)
+        handle_tls_stream(&mut stream, host)
     } else {
-        handle_request(&mut stream, host, path)
+        handle_request(&mut stream, host)
     }
 }
 
-async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
+async fn handle_tls_stream(stream: &mut TcpStream, host: &str) {
     let tls_stream = upgrade_to_https(host, stream).await.unwrap();
-    handle_request(&tls_stream, host, &path)
+    handle_request(&tls_stream, host)
 }
 
 async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
