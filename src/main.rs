@@ -39,7 +39,7 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     
     let go_button = Button::new_with_label("Go").set_image(Some(&go_icon));
     let back_button = Button::new_with_label("Back").set_image(Some(&back_icon));
-    let forward_button = Button::new_with_label("Forward").set_image(Some(&back_icon));
+    let forward_button = Button::new_with_label("Forward").set_image(Some(&forward_icon));
 
     let label = Label::new(None);
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
