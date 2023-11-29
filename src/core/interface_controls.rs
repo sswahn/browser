@@ -1,5 +1,6 @@
 use gtk::prelude::*;
 use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, ResponseType, Window, WindowType};
+use tokio::task;
 
 enum BrowserError {
     IoError(std::io::Error),
