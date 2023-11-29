@@ -32,9 +32,12 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
+
+    let go_icon = Image::from_icon_name(Some("gtk-ok"), IconSize::Button.into());
     let back_icon = Image::from_icon_name(Some("go-back"), IconSize::Button.into());
     let forward_icon = Image::from_icon_name(Some("go-forward"), IconSize::Button.into());
-    let go_button = Button::new_with_label("Go");
+    
+    let go_button = Button::new_with_label("Go").set_image(Some(&go_icon));
     let back_button = Button::new_with_label("Back").set_image(Some(&back_icon));
     let forward_button = Button::new_with_label("Forward").set_image(Some(&back_icon));
 
@@ -47,6 +50,14 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
 
     go_button.connect_clicked(move |_| {
         handle_go_button_click(&entry, &label, &browser);
+    });
+    
+    back_button.connect_clicked(move |_| {
+        handle_back_button_click(&browser);
+    });
+    
+    forward_button.connect_clicked(move |_| {
+        handle_forward_button_click(&browser);
     });
 
     // Handle window close event.
@@ -87,6 +98,16 @@ fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>
             glib::Continue(false)
         });
     });
+}
+
+fn handle_back_button_click(browser: &Mutex<Browser>) {
+    let mut browser = browser.lock().unwrap();
+    browser.navigate_back();
+}
+
+fn handle_forward_button_click(browser: &Mutex<Browser>) {
+    let mut browser = browser.lock().unwrap();
+    browser.navigate_forward();
 }
 
 fn get_port(url: &str) -> u16 {
