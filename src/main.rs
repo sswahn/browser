@@ -142,12 +142,12 @@ async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStrea
     Ok(tls_stream)
 }
 
-async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
-    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", path, host);
-    write_to_stream(stream, &request).await;
-    let response = read_from_stream(stream).await;
-    let (headers, body) = parse_http_response(&response);
-    Ok(body)
+async fn handle_request(stream: &TcpStream, host: &str) -> String {
+    let request = format!("GET / HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", host);
+    stream.write_all(request.as_bytes()).await.unwrap();
+    let mut buffer = Vec::new();
+    stream.take(1024).read_to_end(&mut buffer).await.unwrap();
+    String::from_utf8_lossy(&buffer).to_string()
 }
 
 fn parse_url(url: &str) -> (String, String) {
@@ -198,16 +198,6 @@ fn parse_status_line(status_line: &str) -> Result<(u16, &str, &str), &'static st
     } else {
         Err("Invalid status line format")
     }
-}
-
-async fn write_to_stream<S: Write>(stream: &mut S, data: &str) {
-    stream.write(data.as_bytes()).expect("Failed to write to stream");
-}
-
-async fn read_from_stream<S: Read>(stream: &mut S) -> String {
-    let mut buffer = [0; 1024];
-    stream.read(&mut buffer).expect("Failed to read from stream");
-    String::from_utf8_lossy(&buffer).to_string()
 }
 
 fn render_html(html: &str) {
