@@ -57,8 +57,8 @@ fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
     let port = get_port(&url);
 
     task::spawn(async move {
-        let stream = connect_to_stream(&host, port);
-        let response = make_request(&stream, &host);
+        let stream = connect_to_stream(&host, port).await;
+        let response = make_request(&stream, &host).await;
 
         // Update the UI on the main thread
         gtk::idle_add(move || {
@@ -80,11 +80,12 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
 }
 
 async fn make_request(stream: &mut TcpStream, host: &str) {
-    let working_stream = stream
-    if host.starts_with("https://") {
-        working_stream = upgrade_to_https(&mut stream, host).await
-    }
-    handle_request(&mut working_stream, host)
+    let working_stream = if host.starts_with("https://") {
+        upgrade_to_https(host, stream).await.unwrap()
+    } else {
+        stream
+    };
+    handle_request(&working_stream, host)
 }
 
 async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
