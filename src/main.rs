@@ -29,8 +29,8 @@ impl Browser {
     }
 
     fn navigate(&mut self, url: String) {
-        self.history.push_back(url.clone());
-        self.current_url = url;
+        self.history.push_back(url.to_string());
+        self.current_url = Some(url.to_string());
     }
 
     fn back(&mut self) -> Option<String> {
@@ -96,7 +96,7 @@ fn build_gui(browser: &Mutex<Browser>) {
 fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
     let url = entry.get_text().unwrap_or_else(|| String::from(""));
     let mut browser = browser.lock().unwrap();
-    browser.navigate(url.clone());
+    browser.navigate(&url);
     if let Some(cached_response) = browser.get_cache(&url) {
         label.set_text(cached_response);
         return;
@@ -119,15 +119,15 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
 
 async fn make_request(stream: &mut TcpStream, host: &str, path: &str) {
     if host.starts_with("https://") {
-        handle_tls_stream(&mut stream, host, path);
+        handle_tls_stream(&mut stream, host, path)
     } else {
-        handle_request(&mut stream, host, path);
+        handle_request(&mut stream, host, path)
     }
 }
 
 async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
     let tls_stream = upgrade_to_https(host, stream);
-    handle_request(&tls_stream, host, &path);
+    handle_request(&tls_stream, host, &path)
 }
 
 fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
@@ -141,7 +141,7 @@ async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
     write_to_stream(stream, &request).await;
     let response = read_from_stream(stream).await;
     let (headers, body) = parse_http_response(&response);
-    body;
+    Ok(body)
 }
 
 fn parse_url(url: &str) -> (String, String) {
@@ -209,7 +209,7 @@ async fn write_to_stream<S: Write>(stream: &mut S, data: &str) {
 async fn read_from_stream<S: Read>(stream: &mut S) -> String {
     let mut buffer = [0; 1024];
     stream.read(&mut buffer).expect("Failed to read from stream");
-    String::from_utf8_lossy(&buffer).to_string();
+    String::from_utf8_lossy(&buffer).to_string()
 }
 
 fn render_html(html: &str) {
