@@ -80,16 +80,11 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
 }
 
 async fn make_request(stream: &mut TcpStream, host: &str) {
+    let working_stream = stream
     if host.starts_with("https://") {
-        handle_tls_stream(&mut stream, host)
-    } else {
-        handle_request(&mut stream, host)
+        working_stream = upgrade_to_https(&mut stream, host).await
     }
-}
-
-async fn handle_tls_stream(stream: &mut TcpStream, host: &str) {
-    let tls_stream = upgrade_to_https(host, stream).await.unwrap();
-    handle_request(&tls_stream, host)
+    handle_request(&mut working_stream, host)
 }
 
 async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, Box<dyn std::error::Error>> {
