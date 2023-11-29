@@ -1,7 +1,7 @@
 use native_tls::{TlsConnector, TlsStream};
 use std::net::TcpStream;
+use tokio::task;
 use std::str;
-
 
 const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
@@ -11,6 +11,16 @@ const HTTP_PREFIX: &str = "http://";
 enum BrowserError {
     InvalidUrlFormat { host: String, path: String },
     TlsError(Box<dyn std::error::Error>),
+}
+
+fn http_response() {
+    let (host, path) = parse_url(&url);
+    let port = get_port(&url);
+    task::spawn(async move {
+        let stream = connect_to_stream(&host, port).await;
+        let response = make_request(&stream, &host).await;
+        response
+    });
 }
 
 fn get_port(url: &str) -> u16 {
