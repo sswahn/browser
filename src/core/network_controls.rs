@@ -40,11 +40,9 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
 }
 
 async fn make_request(stream: &mut TcpStream, host: &str) -> Result<String, BrowserError> {
-    if let Ok(working_stream) = get_working_stream(&host, &stream).await {
+    get_working_stream(&host, &stream).await.and_then(|working_stream| {
         handle_request(&working_stream, host)
-    } else {
-        Err(BrowserError::WorkingStreamError)
-    }
+    })
 }
 
 async fn get_working_stream(host: &str, stream: &mut TcpStream) -> Result<TcpStream, BrowserError> {
@@ -54,7 +52,6 @@ async fn get_working_stream(host: &str, stream: &mut TcpStream) -> Result<TcpStr
         Ok(stream)
     }
 }
-
 
 async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, BrowserError> {
     let connector = TlsConnector::new().map_err(|e| BrowserError::TlsError(Box::new(e)))?;
