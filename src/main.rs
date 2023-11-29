@@ -12,22 +12,16 @@ fn main() {
     let port = get_port(&url);
     validate_url(&url, &host, &path);
     let stream = connect_to_stream(&host, port);
-    handle_request(&mut stream, &url);
+    make_request(&mut stream, &url);
 }
 
-fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error> {
-    TcpStream::connect(format!("{}:{}", host, port))
-}
-
-fn handle_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
+fn make_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, path: &str) {
     match stream {
         Ok(mut stream) => {
             if host.starts_with("https://") {
-                // Upgrade the connection to HTTPS if needed
                 handle_tls_stream(&mut stream, host, path);
             } else {
-                // Handle HTTP request
-                handle_http_request(&mut stream, host, path);
+                handle_request(&mut stream, host, path);
             }
         },
         Err(_) => {
@@ -36,12 +30,11 @@ fn handle_request(stream: &mut Result<TcpStream, std::io::Error>, host: &str, pa
     }
 }
 
-fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
-    if let Ok(tls_stream) = upgrade_to_https(host, stream) {
-        handle_https_request(&tls_stream, host, &path);
-    } else {
-        eprintln!("Failed to establish a secure connection");
-    }
+fn connect_to_stream(host: &str, port: u16) -> Result<TcpStream, std::io::Error> {
+    TcpStream::connect(format!("{}:{}", host, port)).map_err(|e| {
+        eprintln!("Failed to connect to the host: {}", e);
+        e
+    })
 }
 
 fn validate_url(url: &str, host: &str, path: &str) -> Result<(), &'static str> {
@@ -76,17 +69,20 @@ fn upgrade_to_https(host: &str, stream: TcpStream) -> Result<TlsStream<TcpStream
     Ok(tls_stream)
 }
 
-fn handle_http_request(stream: &mut TcpStream, host: &str, path: &str) {
-    let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: {}\r\n\r\n", path, host);
-    write_to_stream(stream, &request);
-    let response = read_from_stream(stream);
-    println!("{}", response);
+fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
+    if let Ok(tls_stream) = upgrade_to_https(host, stream) {
+        handle_request(&tls_stream, host, &path);
+    } else {
+        eprintln!("Failed to establish a secure connection");
+    }
 }
 
-fn handle_https_request(tls_stream: &TlsStream<TcpStream>, host: &str, path: &str) {
+fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
     let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: {}\r\n\r\n", path, host);
-    write_to_stream(tls_stream, &request);
-    let response = read_from_stream(tls_stream);
+    if let Err(e) = write_to_stream(stream, &request) {
+        return eprintln!("Failed to write to stream: {}", e);
+    }
+    let response = read_from_stream(stream);
     println!("{}", response);
 }
 
