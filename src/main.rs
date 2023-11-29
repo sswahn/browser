@@ -72,10 +72,10 @@ async fn handle_tls_stream(stream: &mut TcpStream, host: &str, path: &str) {
 
 async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
     let request = format!("GET {} HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", path, host);
-    if let Err(e) = write_to_stream(stream, &request) {
+    if let Err(e) = write_to_stream(stream, &request).await {
         return eprintln!("Failed to write to stream: {}", e);
     }
-    let response = read_from_stream(stream);
+    let response = read_from_stream(stream).await;
     if let Some((headers, body)) = parse_http_response(&response) {
         println!("Headers:\n{}", headers);
         println!("Body:\n{}", body);
