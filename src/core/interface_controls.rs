@@ -155,7 +155,6 @@ async fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Br
         let response = http_response(&url).await
         label.set_text(&response.body);
         browser.set_cache(&url, &response.body);
-        glib::Continue(false)  // stops the idle handler
     });   
 }
 
