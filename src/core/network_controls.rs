@@ -6,6 +6,7 @@ const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
 const HTTPS_PREFIX: &str = "https://";
 const HTTP_PREFIX: &str = "http://";
+const BUFFER_SIZE: usize = 1024;
 
 enum BrowserError {
     InvalidUrlFormat { host: String, path: String },
@@ -63,18 +64,19 @@ async fn handle_request(stream: &TcpStream, host: &str) -> Result<String, Box<dy
     let request = format!("GET / HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", host);
     stream.write_all(request.as_bytes()).await?;
     let mut buffer = Vec::new();
-    stream.take(1024).read_to_end(&mut buffer).await?;
+    stream.take(BUFFER_SIZE).read_to_end(&mut buffer).await?;
     Ok(String::from_utf8_lossy(&buffer).to_string())
 }
 
 fn validate_url(host: &str, path: &str) -> Result<(), BrowserError> {
     if host.is_empty() || path.is_empty() {
-        return Err(BrowserError::InvalidUrlFormat {
+        Err(BrowserError::InvalidUrlFormat {
             host: host.to_string(),
             path: path.to_string(),
-        });
+        })
+    } else {
+        Ok(())
     }
-    Ok(())
 }
 
 fn parse_http_response(response: &str) -> Option<(String, String)> {
