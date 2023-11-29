@@ -1,3 +1,6 @@
+use std::collections::VecDeque;
+use std::collections::HashMap;
+
 struct Browser {
     history: VecDeque<String>,
     current_url: Option<String>,
