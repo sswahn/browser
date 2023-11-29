@@ -36,7 +36,7 @@ async fn make_request(stream: &mut TcpStream, host: &str) -> Result<String, Brow
     handle_request(&working_stream, host)
 }
 
-async fn get_working_stream() {
+async fn get_working_stream(host: &str, stream: &mut TcpStream) -> Result<TcpStream, BrowserError> {
     if host.starts_with(HTTPS_PREFIX) {
         match upgrade_to_https(host, stream).await {
             Ok(tls_stream) => tls_stream,
