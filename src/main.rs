@@ -62,72 +62,50 @@ impl Browser {
 
 fn main() {
     let browser_mutex = Mutex::new(Browser::new());
-    build_gui(browser_mutex)
-    
-    /*
-    let input = read_user_input("Enter URL: ");
-    let url = input.trim().to_string();
-    browser.navigate(url.clone());
-    let cached_response = browser.get_cache(&url)
-    if Some(cached_response) {
-        return render_html(cached_response);
-    }
-    let (host, path) = parse_url(&url);
-    let port = get_port(&url);
-    let stream = connect_to_stream(&host, port).await;
-    let response = make_request(&mut stream, &host, &url).await;
-    render_html(&response)
-    browser.set_cache(&url, &response)
-    */
+    build_gui(&browser_mutex)
 }
 
-fn build_gui(browser_mutex) {
-    gtk::init().expect("Failed to initialize GTK."); // Initialize GTK.
-    let window = Window::new(WindowType::Toplevel);  // Create the main window.
-
-    // Create UI elements.
+fn build_gui(browser: &Mutex<Browser>) {
+    gtk::init().expect("Failed to initialize GTK.");
+    let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
     let button = Button::new_with_label("Go");
     let label = Label::new(None);
-
-    // Set up the layout.
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
     vbox.add(&entry);
     vbox.add(&button);
     vbox.add(&label);
-
     window.add(&vbox);
 
-    // Set up event handling.
-    button.connect_clicked(clone!(entry, label, browser => move |_| {
-        let url = entry.get_text().unwrap_or_else(|| String::from(""));
-        let mut browser = browser_mutex.lock().unwrap();
-        browser.navigate(url.clone());
-        let cached_response = browser.get_cache(&url);
-        if let Some(cached_response) = cached_response {
-            label.set_text(cached_response);
-        } else {
-            let (host, path) = parse_url(&url);
-            let port = get_port(&url);
-            let stream = connect_to_stream(&host, port);
-            let response = make_request(&stream, &url);
-            label.set_text(&response);
-            browser.set_cache(&url, response);
-        }
-    }));
+    button.connect_clicked(move |_| {
+        handle_button_click(&entry, &label, &browser);
+    });
 
     // Handle window close event.
     window.connect_delete_event(|_, _| {
-        // Terminate GTK main loop when the window is closed.
         gtk::main_quit();
         Inhibit(false)
     });
 
-    // Show all UI elements.
-    window.show_all();
+    window.show_all(); // Show all UI elements.
+    gtk::main(); // Start the GTK main loop.
+}
 
-    // Start the GTK main loop.
-    gtk::main();
+fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
+    let url = entry.get_text().unwrap_or_else(|| String::from(""));
+    let mut browser = browser.lock().unwrap();
+    browser.navigate(url.clone());
+    let cached_response = browser.get_cache(&url);
+    if Some(cached_response) {
+        label.set_text(cached_response);
+        return;
+    } 
+    let (host, path) = parse_url(&url);
+    let port = get_port(&url);
+    let stream = connect_to_stream(&host, port);
+    let response = make_request(&stream, &url);
+    label.set_text(&response);
+    browser.set_cache(&url, response);
 }
 
 fn get_port(url: &str) -> u16 {
