@@ -6,7 +6,7 @@ use std::net::TcpStream;
 use std::str;
 use std::sync::Mutex;
 use gtk::prelude::*;
-use gtk::{Label, Button, Entry, Window, WindowType};
+use gtk::{Button, Entry, Image, Label, Window, WindowType};
 use tokio::task;
 
 const HTTP_PORT: u16 = 80;
@@ -32,7 +32,12 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     gtk::init().map_err(|e| BrowserError::IoError(e))?;
     let window = Window::new(WindowType::Toplevel); 
     let entry = Entry::new();
-    let button = Button::new_with_label("Go");
+    let back_icon = Image::from_icon_name(Some("go-back"), IconSize::Button.into());
+    let forward_icon = Image::from_icon_name(Some("go-forward"), IconSize::Button.into());
+    let go_button = Button::new_with_label("Go");
+    let back_button = Button::new_with_label("Back").set_image(Some(&back_icon));
+    let forward_button = Button::new_with_label("Forward").set_image(Some(&back_icon));
+
     let label = Label::new(None);
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 5);
     vbox.add(&entry);
@@ -40,8 +45,8 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     vbox.add(&label);
     window.add(&vbox);
 
-    button.connect_clicked(move |_| {
-        handle_button_click(&entry, &label, &browser);
+    go_button.connect_clicked(move |_| {
+        handle_go_button_click(&entry, &label, &browser);
     });
 
     // Handle window close event.
@@ -55,7 +60,7 @@ fn build_browser(browser: &Mutex<Browser>) -> Result<(), BrowserError> {
     Ok(())
 }
 
-fn handle_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
+fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Mutex<Browser>) {
     let url = entry.get_text().unwrap_or_else(|| String::from(""));
     let mut browser = browser.lock().unwrap();
     browser.navigate(&url);
