@@ -55,8 +55,9 @@ impl Browser {
     }
 }
 
+let mut browser = Browser::new();
+
 fn main() {
-    let mut browser = Browser::new();
     loop {
         let input = read_user_input("Enter URL: ");
         let url = input.trim().to_string();
@@ -101,13 +102,12 @@ fn get_port(url: &str) -> u16 {
 fn parse_url(url: &str) -> (String, String) {
     let url = url.trim_start_matches("http://").trim_start_matches("https://");
     let (host, path) = url.split_once('/').unwrap_or((url, ""));
-    validate_url(&url, &host, &path);
+    validate_url(&host, &path);
     (host.to_string(), path.to_string())
 }
 
-fn validate_url(url: &str, host: &str, path: &str) -> Result<(), &'static str> {
-    let (parsed_host, _) = parse_url(url);
-    if parsed_host.is_empty() || path.is_empty() {
+fn validate_url(host: &str, path: &str) -> Result<(), &'static str> {
+    if host.is_empty() || path.is_empty() {
         eprintln!("Invalid URL format");
         return Err("Invalid URL format");
     }
@@ -138,7 +138,7 @@ async fn handle_request(stream: &mut TcpStream, host: &str, path: &str) {
         println!("Headers:\n{}", headers);
         println!("Body:\n{}", body);
         render_html(&body)
-        // set cache
+        browser.set_cache(path, &body)
     } else {
         eprintln!("Failed to parse HTTP response");
     }
@@ -232,4 +232,3 @@ fn render_html(html: &str) {
         }
     }
 }
-
