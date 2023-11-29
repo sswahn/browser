@@ -4,5 +4,6 @@ version = "1.0.0"
 authors = ["sswahn"]
 
 [dependencies]
+tokio = { version = "1", features = ["full"] }
 native-tls = "0.2"
 gtk = "0.9.0"
