@@ -64,12 +64,11 @@ fn build_bookmarks_menu(browser: &Browser) -> Menu {
     bookmarks_menu.append(&view_bookmarks_item);
     bookmarks_menu_button.set_submenu(Some(&bookmarks_menu));
     bookmarks_menu_bar.append(&bookmarks_menu_button);
-    let browser_clone = browser.clone();
     add_bookmark_item.connect_activate(move |_| {
-        add_bookmark_dialog(&browser_clone);
+        add_bookmark_dialog(&browser);
     });
     view_bookmarks_item.connect_activate(move |_| {
-        view_bookmarks_dialog(&browser_clone);
+        view_bookmarks_dialog(&browser);
     });
     bookmarks_menu_bar
 }
@@ -98,7 +97,6 @@ fn add_bookmark_dialog(browser: &Browser) {
     add_button.connect_clicked(move |_| {
         let title = title_entry.get_text().unwrap_or_else(|| String::from(""));
         let url = url_entry.get_text().unwrap_or_else(|| String::from(""));
-        let mut browser = browser.lock().unwrap();
         browser.add_bookmark(&url, &title);
         dialog.close();
     });
@@ -116,7 +114,7 @@ fn view_bookmarks_dialog(browser: &Browser) {
 
     let bookmarks_label = Label::new(Some("Bookmarks:"));
 
-    let bookmarks_text = browser.lock().unwrap().get_bookmarks().iter()
+    let bookmarks_text = browser.get_bookmarks().iter()
         .map(|(title, url)| format!("{}: {}", title, url))
         .collect::<Vec<String>>()
         .join("\n");
@@ -139,9 +137,8 @@ fn view_bookmarks_dialog(browser: &Browser) {
     dialog.show_all();
 }
 
-async fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
+fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
     let url = entry.get_text().unwrap_or(String::from(""));
-    let mut browser = browser.lock().unwrap();
     browser.navigate(&url);
 
     label.set_text("Loading...");
@@ -152,19 +149,29 @@ async fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser)
     }
 
     tokio::spawn(async move {
-        if let Ok(response) = http_response(&url).await {
-            label.set_text(&response.body);
-            browser.set_cache(&url, &response.body);
+        match http_response(&url).await {
+            Ok(response) => {
+                // Update the UI on the main thread with the response.
+                glib::idle_add(move || {
+                    label.set_text(&response.body);
+                    Continue(false) // Stop the idle add
+                });
+            }
+            Err(err) => {
+                // Handle the error and update the UI.
+                glib::idle_add(move || {
+                    label.set_text(&format!("Error: {:?}", err));
+                    Continue(false) // Stop the idle add
+                });
+            }
         }
     });   
 }
 
 fn handle_back_button_click(browser: &Browser) {
-    let mut browser = browser.lock().unwrap();
     browser.back();
 }
 
 fn handle_forward_button_click(browser: &Browser) {
-    let mut browser = browser.lock().unwrap();
     browser.forward();
 }
