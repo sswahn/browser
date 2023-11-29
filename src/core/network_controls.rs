@@ -14,13 +14,14 @@ enum BrowserError {
 }
 
 fn http_response() {
-    let (host, path) = parse_url(&url);
+    let host = parse_url(&url);
     let port = get_port(&url);
-    task::spawn(async move {
+    let response = task::spawn(async move {
         let stream = connect_to_stream(&host, port).await;
-        let response = make_request(&stream, &host).await;
-        response
-    });
+        make_request(&stream, &host).await
+    }).await?;
+
+    Ok(response)
 }
 
 fn get_port(url: &str) -> u16 {
@@ -43,7 +44,7 @@ async fn get_working_stream() {
             Err(err) => Err(BrowserError::TlsError(err)),
         }
     } else {
-        stream
+        Ok(stream)
     }
 }
 
@@ -61,11 +62,11 @@ async fn handle_request(stream: &TcpStream, host: &str) -> Result<String, Box<dy
     Ok(String::from_utf8_lossy(&buffer).to_string())
 }
 
-fn parse_url(url: &str) -> (String, String) {
+fn parse_url(url: &str) -> String {
     let url = url.trim_start_matches(HTTP_PREFIX).trim_start_matches(HTTPS_PREFIX);
     let (host, path) = url.split_once('/').unwrap_or((url, ""));
     validate_url(&host, &path);
-    (host.to_string(), path.to_string())
+    host.to_string()
 }
 
 fn validate_url(host: &str, path: &str) -> Result<(), BrowserError> {
