@@ -1,5 +1,7 @@
 # Browser · [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/sswahn/browser/blob/main/LICENSE)
 
+<!--TODO: write unit tests -->
+
 ## Overview
 
 This is a simple web browser written in Rust.
