@@ -86,9 +86,9 @@ async fn get_working_stream(host: &str, stream: &mut TcpStream) -> Result<TcpStr
     }
 }
 
-async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStream<TcpStream>, BrowserError> {
-    let connector = TlsConnector::new().map_err(|e| BrowserError::TlsError(Box::new(e)))?;
-    let tls_stream = connector.connect(host, stream).map_err(|e| BrowserError::TlsError(Box::new(e)))?;
+async fn upgrade_to_https(host: &str, stream: &TcpStream) -> Result<TlsStream<TcpStream>, native_tls::Error> {
+    let connector = TlsConnector::new()?;
+    let tls_stream = connector.connect(host, stream)?;
     Ok(tls_stream)
 }
 
