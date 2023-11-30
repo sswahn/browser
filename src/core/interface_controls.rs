@@ -1,6 +1,6 @@
 mod network_controls;
 use network_controls::http_response;
-use tokio::task;
+use futures::executor::block_on;
 use gtk::prelude::*;
 use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, Orientation, ResponseType, TextView, Window, WindowType};
 
@@ -123,13 +123,11 @@ fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
         return;
     }
     label.set_text("Loading...");
-    tokio::spawn(async move {
-        glib::idle_add(move || {
-            match http_response(&url).await {
-                Ok(response) => label.set_text(&response.body),
-                Err(err) => label.set_text(&format!("Error: {:?}", err))
-            }
-            Return(false) // Stop the idle add
-        });
+    glib::idle_add(move || {
+        block_on(match http_response(&url).await {
+            Ok(response) => label.set_text(&response.body),
+            Err(err) => label.set_text(&format!("Error: {:?}", err))
+        })
+        Return(false) // Stop the idle add
     });
 }
