@@ -16,13 +16,10 @@ fn build_browser(browser: &Browser) -> Result<(), BrowserError> {
     let (back_button, forward_button, go_button) = build_navigation_buttons(&entry, &label, &browser);
     let bookmarks_menu_bar = build_bookmarks_menu(&browser);
     let vbox = Box::new(Orientation::Vertical, 5);
-
-    // Handle window close event.
-    window.connect_delete_event(|_, _| {
+    window.connect_delete_event(|_, _| { // Handle window close event.
         gtk::main_quit();
         Inhibit(false)
     });
-
     vbox.add(&entry);
     vbox.add(&back_button);
     vbox.add(&forward_button);
@@ -75,16 +72,12 @@ fn build_bookmarks_menu(browser: &Browser) -> Menu {
 fn add_bookmark_dialog(browser: &Browser) {
     let dialog = Dialog::new();
     dialog.set_title("Add Bookmark");
-
     let title_label = Label::new(Some("Bookmark Title:"));
     let title_entry = Entry::new();
-
     let url_label = Label::new(Some("Bookmark URL:"));
     let url_entry = Entry::new();
-
     let add_button = Button::new_with_label("Add");
     let cancel_button = Button::new_with_label("Cancel");
-
     let content_area = dialog.get_content_area();
     content_area.add(&title_label);
     content_area.add(&title_entry);
@@ -92,47 +85,37 @@ fn add_bookmark_dialog(browser: &Browser) {
     content_area.add(&url_entry);
     content_area.add(&add_button);
     content_area.add(&cancel_button);
-
     add_button.connect_clicked(move |_| {
         let title = title_entry.get_text().unwrap_or_else(|| String::from(""));
         let url = url_entry.get_text().unwrap_or_else(|| String::from(""));
         browser.add_bookmark(&url, &title);
         dialog.close();
     });
-
     cancel_button.connect_clicked(|_| {
         dialog.close();
     });
-
     dialog.show_all();
 }
 
 fn view_bookmarks_dialog(browser: &Browser) {
     let dialog = Dialog::new();
     dialog.set_title("Bookmarks");
-
     let bookmarks_label = Label::new(Some("Bookmarks:"));
-
     let bookmarks_text = browser.get_bookmarks().iter()
         .map(|(title, url)| format!("{}: {}", title, url))
         .collect::<Vec<String>>()
         .join("\n");
-
     let bookmarks_entry = Entry::new();
     bookmarks_entry.set_text(&bookmarks_text);
     bookmarks_entry.set_editable(false);
-
     let close_button = Button::new_with_label("Close");
-
     let content_area = dialog.get_content_area();
     content_area.add(&bookmarks_label);
     content_area.add(&bookmarks_entry);
     content_area.add(&close_button);
-
     close_button.connect_clicked(|_| {
         dialog.close();
     });
-
     dialog.show_all();
 }
 
@@ -154,8 +137,6 @@ fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
         });
     });
 }
-
-
 
 fn handle_back_button_click(browser: &Browser) {
     browser.back();
