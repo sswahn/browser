@@ -122,7 +122,7 @@ fn view_bookmarks_dialog(browser: &Browser) {
 }
 
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
-    let url = entry.get_text().unwrap_or(String::new()).to_string();
+    let url = entry.get_text().unwrap_or_default().to_string();
     browser.navigate(&url);
     if let Some(cached_response) = browser.get_cache(&url) {
         label.set_text(cached_response);
