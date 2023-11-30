@@ -1,7 +1,8 @@
 use native_tls::{TlsConnector, TlsStream};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use std::collections::HashMap;
 use std::net::TcpStream;
-use std::str;
+use std::sync::{Arc, Mutex};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
@@ -14,6 +15,33 @@ enum BrowserError {
     TlsError(Box<dyn std::error::Error>),
     WorkingStreamError,
     HandleRequestError(std::io::Error),
+}
+
+struct ConnectionPool {
+    pool: Arc<Mutex<HashMap<String, TcpStream>>>,
+}
+
+impl ConnectionPool {
+    fn new() -> Self {
+        ConnectionPool {
+            pool: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+
+    async fn get_connection(&self, host: &str, port: u16) -> Result<TcpStream, BrowserError> {
+        let key = format!("{}:{}", host, port);
+        let mut pool = self.pool.lock().unwrap();
+
+        if let Some(stream) = pool.get(&key) {
+            Ok(stream.try_clone().expect("Failed to clone TCP stream"))
+        } else {
+            let new_stream = TcpStream::connect(&key).await.map_err(|_| BrowserError::ConnectionError)?;
+
+            pool.insert(key.clone(), new_stream.try_clone().expect("Failed to clone TCP stream"));
+
+            Ok(pool[&key].try_clone().expect("Failed to clone TCP stream"))
+        }
+    }
 }
 
 async fn http_response(url: &str) -> Result<Response, BrowserError> {
@@ -35,7 +63,8 @@ fn get_port(url: &str) -> u16 {
 }
 
 async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
-    TcpStream::connect(format!("{}:{}", host, port))
+    pool.get_connection(host, port)
+    //TcpStream::connect(format!("{}:{}", host, port))
 }
 
 async fn make_request(stream: &mut TcpStream, host: &str) -> Result<String, BrowserError> {
@@ -57,7 +86,7 @@ async fn upgrade_to_https(host: &str, stream: &mut TcpStream) -> Result<TlsStrea
     Ok(tls_stream)
 }
 
-async fn handle_request(stream: &TcpStream, host: &str) -> Result<String, Box<dyn std::error::Error>> {
+async fn handle_request(stream: &TcpStream, host: &str) -> Result<String, BrowserError> {
     let request = format!("GET / HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", host);
     stream.write_all(request.as_bytes()).await?;
     let mut buffer = Vec::new();
