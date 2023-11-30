@@ -7,7 +7,7 @@ repository = "https://github.com/sswahn/browser"
 description = "This is a simple web browser written in Rust."
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
+futures = "0.3"
 native-tls = "0.2"
 gtk = "0.9.0"
 
