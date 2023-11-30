@@ -2,9 +2,17 @@
 name = "browser"
 version = "1.0.0"
 edition = "2023"
-authors = ["sswahn"]
+license = "MIT"
+repository = "https://github.com/sswahn/browser"
+description = "A description of your crate"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 native-tls = "0.2"
 gtk = "0.9.0"
+
+[features]
+# Define features if needed
+
+[package.metadata.docs.rs]
+documentation = "https://github.com/sswahn/browser/blob/main/README.md"
