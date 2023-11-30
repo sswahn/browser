@@ -14,6 +14,7 @@ impl Browser {
             history: VecDeque::new(),
             current_url: None,
             cache: HashMap::new(),
+            bookmarks: HashMap::new(),
         }
     }
 
@@ -37,9 +38,7 @@ impl Browser {
     }
 
     pub fn refresh(&mut self) {
-        if let Some(url) = self.current_url.clone() {
-            self.cache.remove(&url);
-        }
+        self.cache.remove(&url);
     }
 
     pub fn set_cache(&mut self, url: &str, response: String) {
