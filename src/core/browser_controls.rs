@@ -38,7 +38,9 @@ impl Browser {
     }
 
     pub fn refresh(&mut self) {
-        self.cache.remove(&url);
+        if let Some(url) = &self.current_url {
+            self.cache.remove(url);
+        }
     }
 
     pub fn set_cache(&mut self, url: &str, response: String) {
