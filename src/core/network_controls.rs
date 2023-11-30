@@ -1,4 +1,5 @@
 use native_tls::{TlsConnector, TlsStream};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use std::net::TcpStream;
 use std::str;
 
@@ -6,7 +7,6 @@ const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
 const HTTPS_PREFIX: &str = "https://";
 const HTTP_PREFIX: &str = "http://";
-const BUFFER_SIZE: usize = 1024;
 
 enum BrowserError {
     InvalidUrlFormat { host: String, path: String },
@@ -60,7 +60,7 @@ async fn handle_request(stream: &TcpStream, host: &str) -> Result<String, Box<dy
     let request = format!("GET / HTTP/2.0\r\nHost: {}\r\nUser-Agent: Browser\r\n\r\n", host);
     stream.write_all(request.as_bytes()).await?;
     let mut buffer = Vec::new();
-    stream.take(BUFFER_SIZE).read_to_end(&mut buffer).await?;
+    stream.read_to_end(&mut buffer).await?;
     Ok(String::from_utf8_lossy(&buffer).to_string())
 }
 
