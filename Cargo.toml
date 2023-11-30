@@ -4,7 +4,7 @@ version = "1.0.0"
 edition = "2023"
 license = "MIT"
 repository = "https://github.com/sswahn/browser"
-description = "A description of your crate"
+description = "This is a simple web browser written in Rust."
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
