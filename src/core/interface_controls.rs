@@ -38,15 +38,9 @@ fn build_navigation_buttons(entry: &Entry, label: &Label, browser: &Browser) -> 
     let back_button = Button::new_with_label("Back").set_image(Some(&back_icon));
     let forward_button = Button::new_with_label("Forward").set_image(Some(&forward_icon));
     let go_button = Button::new_with_label("Go").set_image(Some(&go_icon));
-    go_button.connect_clicked(move |_| {
-        handle_go_button_click(&entry, &label, &browser);
-    });
-    back_button.connect_clicked(move |_| {
-        handle_back_button_click(&browser);
-    });
-    forward_button.connect_clicked(move |_| {
-        handle_forward_button_click(&browser);
-    });
+    go_button.connect_clicked(|_| handle_go_button_click(&entry, &label, &browser));
+    back_button.connect_clicked(|_| browser.back());
+    forward_button.connect_clicked(|_| browser.forward());
     (back_button, forward_button, go_button)
 }
 
@@ -60,12 +54,8 @@ fn build_bookmarks_menu(browser: &Browser) -> Menu {
     bookmarks_menu.append(&view_bookmarks_item);
     bookmarks_menu_button.set_submenu(Some(&bookmarks_menu));
     bookmarks_menu_bar.append(&bookmarks_menu_button);
-    add_bookmark_item.connect_activate(move |_| {
-        add_bookmark_dialog(&browser);
-    });
-    view_bookmarks_item.connect_activate(move |_| {
-        view_bookmarks_dialog(&browser);
-    });
+    add_bookmark_item.connect_activate(|_| add_bookmark_dialog(&browser));
+    view_bookmarks_item.connect_activate(|_| view_bookmarks_dialog(&browser));
     bookmarks_menu_bar
 }
 
@@ -122,7 +112,10 @@ fn view_bookmarks_dialog(browser: &Browser) {
 }
 
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
-    let url = entry.get_text().unwrap_or_default().to_string();
+    let url = entry.get_text().unwrap_or_else(|| {
+        label.set_text("Please enter a URL.");
+        return String::new();
+    });
     browser.navigate(&url);
     if let Some(cached_response) = browser.get_cache(&url) {
         label.set_text(cached_response);
@@ -138,12 +131,4 @@ fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
             Return(false) // Stop the idle add
         });
     });
-}
-
-fn handle_back_button_click(browser: &Browser) {
-    browser.back();
-}
-
-fn handle_forward_button_click(browser: &Browser) {
-    browser.forward();
 }
