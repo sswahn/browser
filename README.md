@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a simple browser library written in Rust. It provides a basic browser functionality with a GTK user interface.
+This is a simple browser library written in Rust.
 
 ## Features
 
