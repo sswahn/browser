@@ -37,18 +37,20 @@ impl Browser {
         })
     }
 
-    pub fn refresh(&mut self) {
-        if let Some(url) = &self.current_url {
-            self.cache.remove(url);
-        }
-    }
-
     pub fn set_cache(&mut self, url: &str, response: String) {
         self.cache.insert(url.to_string(), response);
     }
 
     pub fn get_cache(&self, url: &str) -> Option<&String> {
         self.cache.get(url)
+    }
+
+    pub fn remove_from_cache(&mut self, url: &str) {
+        self.cache.remove(url);
+    }
+
+    pub fn clear_cache(&mut self) {
+        self.cache.clear();
     }
 
     pub fn add_bookmark(&mut self, url: &str, title: &str) {
