@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a simple browser written in Rust.
+This is a simple web browser written in Rust.
 
 ## Features
 
