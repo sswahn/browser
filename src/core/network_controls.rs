@@ -44,6 +44,12 @@ impl ConnectionPool {
     }
 }
 
+struct HttpResponse {
+    status: u16,
+    headers: Vec<(String, String)>,
+    body: String,
+}
+
 async fn http_response(url: &str) -> Result<Response, BrowserError> {
     let host = parse_url(&url);
     let port = get_port(&url);
@@ -105,21 +111,36 @@ fn validate_url(host: &str, path: &str) -> Result<(), BrowserError> {
     }
 }
 
-fn parse_http_response(response: &str) -> Option<(String, String)> {
+fn parse_http_response(response: &str) -> Option<HttpResponse> {
     let mut lines = response.lines();
+
+    // Parse status line
     if let Some(status_line) = lines.next() {
-        let (status, _version, _reason) = parse_status_line(status_line);
+        let (status, _, _) = parse_status_line(status_line)?;
+
+        // Check if status is in the success range
         if status >= 200 && status < 300 {
-            let mut headers = String::new();
+            let mut headers = Vec::new();
+
+            // Parse headers
             while let Some(line) = lines.next() {
                 if line.trim().is_empty() {
                     break;
                 }
-                headers.push_str(line);
-                headers.push('\n');
+
+                if let Some((name, value)) = parse_header(line) {
+                    headers.push((name, value));
+                }
             }
-            let body = lines.collect::<String>();
-            Some((headers, body))
+
+            // Parse body
+            let body = lines.collect::<Vec<&str>>().join("\n");
+
+            Some(HttpResponse {
+                status,
+                headers,
+                body,
+            })
         } else {
             None
         }
@@ -128,14 +149,25 @@ fn parse_http_response(response: &str) -> Option<(String, String)> {
     }
 }
 
-fn parse_status_line(status_line: &str) -> Result<(u16, &str, &str), &'static str> {
+fn parse_status_line(status_line: &str) -> Option<(u16, &str, &str)> {
     let mut parts = status_line.split_whitespace().collect::<Vec<&str>>();
     if parts.len() >= 3 {
-        let status = parts[0].parse().unwrap_or(0);
+        let status = parts[0].parse().ok()?;
         let version = parts[1];
         let reason = parts[2..].join(" ");
-        Ok((status, version, &reason))
+        Some((status, version, &reason))
     } else {
-        Err("Invalid status line format")
+        None
+    }
+}
+
+fn parse_header(header_line: &str) -> Option<(String, String)> {
+    let mut parts = header_line.splitn(2, ':');
+    if let (Some(name), Some(value)) = (parts.next(), parts.next()) {
+        let name = name.trim().to_string();
+        let value = value.trim().to_string();
+        Some((name, value))
+    } else {
+        None
     }
 }
