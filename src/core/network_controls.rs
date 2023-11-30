@@ -38,9 +38,8 @@ async fn connect_to_stream(host: &str, port: u16) -> TcpStream {
 }
 
 async fn make_request(stream: &mut TcpStream, host: &str) -> Result<String, BrowserError> {
-    get_working_stream(&host, &stream).await.and_then(|working_stream| {
-        handle_request(&working_stream, host)
-    })
+    let working_stream = get_working_stream(&host, &stream).await?;
+    handle_request(&working_stream, &host)
 }
 
 async fn get_working_stream(host: &str, stream: &mut TcpStream) -> Result<TcpStream, BrowserError> {
