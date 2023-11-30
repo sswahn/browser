@@ -112,10 +112,11 @@ fn view_bookmarks_dialog(browser: &Browser) {
 }
 
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
-    let url = entry.get_text().unwrap_or_else(|| {
+    let url = entry.get_text().unwrap_or_default().clone();
+    if url.is_empty() {
         label.set_text("Please enter a URL.");
-        return String::new();
-    });
+        return;
+    }
     browser.navigate(&url);
     if let Some(cached_response) = browser.get_cache(&url) {
         label.set_text(cached_response);
