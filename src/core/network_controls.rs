@@ -18,7 +18,7 @@ enum BrowserError {
 }
 
 struct ConnectionPool {
-    pool: Arc<Mutex<HashMap<String, TcpStream>>>,
+    pool: Arc<Mutex<HashMap<String, Arc<Mutex<TcpStream>>>>>,
 }
 
 impl ConnectionPool {
@@ -33,11 +33,12 @@ impl ConnectionPool {
         let mut pool = self.pool.lock().unwrap();
 
         if let Some(stream) = pool.get(&key) {
-            Ok(stream.try_clone().expect("Failed to clone TCP stream"))
+            Ok(Arc::clone(stream))
         } else {
             let new_stream = TcpStream::connect(&key).await.map_err(|_| BrowserError::ConnectionError)?;
-            pool.insert(key.clone(), new_stream.try_clone().expect("Failed to clone TCP stream"));
-            Ok(pool[&key].try_clone().expect("Failed to clone TCP stream"))
+            let new_stream_arc = Arc::new(Mutex::new(new_stream));
+            pool.insert(key.clone(), Arc::clone(&new_stream_arc));
+            Ok(new_stream_arc)
         }
     }
 }
