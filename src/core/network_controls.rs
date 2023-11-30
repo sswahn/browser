@@ -2,7 +2,6 @@ use native_tls::{TlsConnector, TlsStream};
 use std::collections::HashMap;
 use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 const HTTP_PORT: u16 = 80;
 const HTTPS_PORT: u16 = 443;
@@ -85,7 +84,7 @@ async fn get_working_stream(host: &str, stream: &mut TcpStream) -> Result<TcpStr
     }
 }
 
-async fn upgrade_to_https(host: &str, stream: &TcpStream) -> Result<TlsStream<TcpStream>, native_tls::Error> {
+async fn upgrade_to_https(host: &str, stream: &TcpStream) -> Result<TlsStream<TcpStream>, BrowserError> {
     let connector = TlsConnector::new()?;
     let tls_stream = connector.connect(host, stream)?;
     Ok(tls_stream)
