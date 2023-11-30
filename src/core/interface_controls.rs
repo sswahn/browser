@@ -145,24 +145,17 @@ fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
     }
     label.set_text("Loading...");
     tokio::spawn(async move {
-        match http_response(&url).await {
-            Ok(response) => {
-                // Update the UI on the main thread with the response.
-                glib::idle_add(move || {
-                    label.set_text(&response.body);
-                    Return(false) // Stop the idle add
-                });
+        glib::idle_add(move || {
+            match http_response(&url).await {
+                Ok(response) => label.set_text(&response.body),
+                Err(err) => label.set_text(&format!("Error: {:?}", err))
             }
-            Err(err) => {
-                // Handle the error and update the UI.
-                glib::idle_add(move || {
-                    label.set_text(&format!("Error: {:?}", err));
-                    Return(false) // Stop the idle add
-                });
-            }
-        }
-    });   
+            Return(false) // Stop the idle add
+        });
+    });
 }
+
+
 
 fn handle_back_button_click(browser: &Browser) {
     browser.back();
