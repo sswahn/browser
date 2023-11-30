@@ -36,9 +36,7 @@ impl ConnectionPool {
             Ok(stream.try_clone().expect("Failed to clone TCP stream"))
         } else {
             let new_stream = TcpStream::connect(&key).await.map_err(|_| BrowserError::ConnectionError)?;
-
             pool.insert(key.clone(), new_stream.try_clone().expect("Failed to clone TCP stream"));
-
             Ok(pool[&key].try_clone().expect("Failed to clone TCP stream"))
         }
     }
