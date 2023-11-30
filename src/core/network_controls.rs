@@ -13,6 +13,7 @@ enum BrowserError {
     ConnectionError,
     TlsError(Box<dyn std::error::Error>),
     WorkingStreamError,
+    HandleRequestError(std::io::Error),
 }
 
 async fn http_response(url: &str) -> Result<Response, BrowserError> {
