@@ -12,7 +12,7 @@ const HTTP_PREFIX: &str = "http://";
 enum BrowserError {
     InvalidUrlFormat { host: String, path: String },
     ConnectionError,
-    TlsError(Box<dyn std::error::Error>),
+    TlsError(native_tls::Error),
     WorkingStreamError,
     HandleRequestError(std::io::Error),
 }
