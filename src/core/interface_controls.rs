@@ -2,7 +2,7 @@ mod network_controls;
 use network_controls::http_response;
 use tokio::task;
 use gtk::prelude::*;
-use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, Orientation, ResponseType, Window, WindowType};
+use gtk::{Box, Button, Dialog, Entry, Image, Label, Menu, MenuBar, MenuItem, Orientation, ResponseType, TextView, Window, WindowType};
 
 enum BrowserError {
     IoError(std::io::Error),
@@ -86,9 +86,11 @@ fn add_bookmark_dialog(browser: &Browser) {
     content_area.add(&add_button);
     content_area.add(&cancel_button);
     add_button.connect_clicked(move |_| {
-        let title = title_entry.get_text().unwrap_or_else(|| String::from(""));
-        let url = url_entry.get_text().unwrap_or_else(|| String::from(""));
-        browser.add_bookmark(&url, &title);
+        let title = title_entry.get_text().unwrap_or_else(|| String::new());
+        let url = url_entry.get_text().unwrap_or_else(|| String::new());
+        if !title.is_empty() && !url.is_empty() {
+            browser.add_bookmark(&url, &title);
+        }
         dialog.close();
     });
     cancel_button.connect_clicked(|_| {
@@ -105,7 +107,7 @@ fn view_bookmarks_dialog(browser: &Browser) {
         .map(|(title, url)| format!("{}: {}", title, url))
         .collect::<Vec<String>>()
         .join("\n");
-    let bookmarks_entry = Entry::new();
+    let bookmarks_entry = TextView::new();
     bookmarks_entry.set_text(&bookmarks_text);
     bookmarks_entry.set_editable(false);
     let close_button = Button::new_with_label("Close");
@@ -120,7 +122,7 @@ fn view_bookmarks_dialog(browser: &Browser) {
 }
 
 fn handle_go_button_click(entry: &Entry, label: &Label, browser: &Browser) {
-    let url = entry.get_text().unwrap_or(String::from(""));
+    let url = entry.get_text().unwrap_or(String::new()).to_string();
     browser.navigate(&url);
     if let Some(cached_response) = browser.get_cache(&url) {
         label.set_text(cached_response);
