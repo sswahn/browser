@@ -9,7 +9,7 @@ description = "This is a simple web browser written in Rust."
 [dependencies]
 futures = "0.3.29"
 native-tls = "0.2.11"
-gtk4 = "0.7.3"
+gust = "1.0.0"
 
 [features]
 # Define features if needed
