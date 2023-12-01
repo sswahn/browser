@@ -1,15 +1,9 @@
 mod network_controls;
 use network_controls::http_response;
 use futures::executor::block_on;
+use iced::{button, Align, Application, Button, Column, Command, Container, Element, Image, Settings, Text, TextInput};
 
-use iced::{
-    button, Align, Application, Button, Column, Command, Container, Element, Image, Settings, Text,
-    TextInput,
-};
-
-#[derive(Default)]
 struct BrowserApp {
-    browser: Browser, // Make Browser public
     entry: TextInput,
     label: Text,
     back_button: button::State,
@@ -19,7 +13,6 @@ struct BrowserApp {
     view_bookmarks_button: button::State,
 }
 
-#[derive(Debug, Clone)]
 enum Message {
     BackButtonPressed,
     ForwardButtonPressed,
@@ -73,38 +66,4 @@ impl Application for BrowserApp {
     fn view(&mut self) -> Element<Message> {
         // Same as before
     }
-}
-
-// Same as before
-
-fn main() {
-    BrowserApp::run(Settings::default());
-}
-
-pub struct Browser {
-    // Add fields for managing navigation and bookmarks
-}
-
-impl Browser {
-    pub fn back(&mut self) {
-        // Implement back navigation logic
-    }
-
-    pub fn forward(&mut self) {
-        // Implement forward navigation logic
-    }
-
-    pub fn navigate(&mut self, url: &str) {
-        // Implement navigation logic
-    }
-    
-    // Add other methods for managing bookmarks, cache, etc.
-}
-
-fn add_bookmark_dialog(browser: &Browser) {
-    // Implement add bookmark dialog logic
-}
-
-fn view_bookmarks_dialog(browser: &Browser) {
-    // Implement view bookmarks dialog logic
 }
