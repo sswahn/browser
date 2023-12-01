@@ -1,7 +1,7 @@
 [package]
 name = "browser"
 version = "1.0.0"
-edition = "2021"
+edition = "2021" # Specify the Rust edition
 license = "MIT"
 repository = "https://github.com/sswahn/browser"
 description = "This is a simple web browser written in Rust."
